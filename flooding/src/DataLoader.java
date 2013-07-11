@@ -10,7 +10,7 @@ import java.util.GregorianCalendar;
 
 public class DataLoader {
 	
-	private Calendar BASE_DATE = new GregorianCalendar(1948, 0, 1);
+	//private Calendar BASE_DATE = new GregorianCalendar(1948, 0, 1);
 	
 	public static String features[] = new String[] {"Z1000", "T850", "PW", "U300", "U850", "V300", "V850", "Z300", "Z500"};
 	
@@ -69,15 +69,18 @@ public class DataLoader {
 		reader.close();
     }
 	
-    public static double[][] loadingData(String datafile, String delimit, int LocNum, int dayNum) throws IOException {
-    	double[][] ret = new double[LocNum][dayNum];
+    public static double[][] loadingData(String datafile, String delimit, int LocNum, int start, int end) throws IOException {
+    	double[][] ret = new double[LocNum][end-start+1];
        	BufferedReader reader = new BufferedReader(new FileReader(datafile));
        	String line="";
-    	int day = 0;
-		while ((line = reader.readLine()) != null) {   	
-			String[] values = line.split(delimit);
-			for (int loc=1;loc<=LocNum;loc++){
-				ret[loc-1][day] = Double.parseDouble(values[loc]);
+    	int day = 0, i=0;
+		while ((line = reader.readLine()) != null) {
+			if ((day>= start)&&(day<= end)) {
+				String[] values = line.split(delimit);
+				for (int loc=1;loc<=LocNum;loc++){
+					ret[loc-1][i] = Double.parseDouble(values[loc]);
+				}
+				i++;
 			}
 			day++;
 		}
