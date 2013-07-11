@@ -152,7 +152,6 @@ public class flooding_prediction {
 		}
 		
 		
-		
 		String features[] = DataLoader.features;
     	String featureFiles[] = DataLoader.featureFiles;
 		String delimit2 = "\\s+";
