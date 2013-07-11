@@ -12,16 +12,20 @@ import java.util.concurrent.Callable;
 import weka.classifiers.Classifier;
 
 public class flooding_prediction {
-	static public Calendar Base_Date = new GregorianCalendar(1980, 0, 1);
+	static public Calendar Base_Date = new GregorianCalendar(1980, 0, 1); // first date's ID starts with 0
 	static public String IowaPrecipFile = "./data/text/PRECIP2_1980-2010.txt";
 	static public String IowaPCFile = "IowaPCs.txt";
 	static public String IowaEPCFile = "IowaEPCs.txt";
-	static public int Data_start_day = 0, Data_end_day = 23010-11688; //1980-1-1 to 2010-12-31
+	static public Calendar Start_Date = new GregorianCalendar(2001, 0, 1);
+	static public Calendar End_Date = new GregorianCalendar(2010, 11, 31);
+	static public long Data_start_day =(Start_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+	static public long Data_end_day = (End_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+	//static public long Data_end_day = 23010-11688; //1980-1-1 to 2010-12-31
 	//static int UsingData_start_day = 18993, UsingData_end_day = 23010; //2000-1-1 to 2010-12-31
 	//static int UsingData_start_day = 0, UsingData_end_day = 23010;
 	static public int trainData_start_year = 1980, trainData_end_year = 2004;
 	static public int testData_start_year = 2005, testData_end_year = 2010;
-	static public int totalDays = Data_end_day-Data_start_day+1 , totalSampleLocations = 5328;
+	static public int totalDays = (int)(Data_end_day-Data_start_day+1) , totalSampleLocations = 5328;
 	static public int maxNonePCDays = 2, minPCDays = 7;
 	static public double lowPercentile = 0.2, PCPercentile=0.6, PCLowBound = 0.7, PCUpBound = 0.8 , EPCPercentile=0.90;
 	static public String idFile[] = {"loc_Individuals.txt","loc_Iowa.txt","loc_All.txt"};
@@ -106,7 +110,7 @@ public class flooding_prediction {
 		System.out.println("low:"+low);
 		System.out.println("PCThreshold:"+PCThreshold);
 		System.out.println("EPCThreshold:"+EPCThreshold);
-		ArrayList<PWC> pwclist = PWC.FindPWCs(IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
 		System.out.println("pwclist.size:"+pwclist.size());
 		//PWC.SortPWCbyLength(pwclist);
 		//print out all the PCs

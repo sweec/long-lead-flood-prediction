@@ -59,7 +59,7 @@ public class PWLocation implements Comparable<PWLocation>{
 					}
 				}
 			}
-			pw1all.add(new PWC(sday,eday,Double.MAX_VALUE));
+			pw1all.add(new PWC(epc.BASE_DATE,sday,eday,Double.MAX_VALUE));
 		}
 		
 		for (int i=0;i<pw2.size();i++){
@@ -76,7 +76,7 @@ public class PWLocation implements Comparable<PWLocation>{
 					}
 				}
 			}
-			pw2all.add(new PWC(sday,eday,Double.MAX_VALUE));
+			pw2all.add(new PWC(epc.BASE_DATE,sday,eday,Double.MAX_VALUE));
 		}
 
 		for (PWC c2:pw2all){
@@ -115,7 +115,7 @@ public class PWLocation implements Comparable<PWLocation>{
 					}
 				}
 			}
-			pw1all.add(new PWC(sday,eday,Double.MAX_VALUE));
+			pw1all.add(new PWC(epc.BASE_DATE, sday,eday,Double.MAX_VALUE));
 		}
 
 		for (PWC c2:pw2){
@@ -196,12 +196,16 @@ public class PWLocation implements Comparable<PWLocation>{
 			) throws IOException {
 		
 		ArrayList<PWLocation> loclist = new ArrayList<PWLocation>();
-		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, flooding_prediction.totalSampleLocations, flooding_prediction.totalDays);
+		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, 
+				flooding_prediction.totalSampleLocations,
+				(int)flooding_prediction.Data_start_day,
+				(int)flooding_prediction.Data_end_day);
 		double PW20p = StdStats.percentile(PWdata,flooding_prediction.lowPercentile); 
 		double PW60p = StdStats.percentile(PWdata,flooding_prediction.PCPercentile);
 		double PW90p = StdStats.percentile(PWdata,flooding_prediction.EPCPercentile);;
 		for (int loc=0;loc<flooding_prediction.totalSampleLocations;loc++) {
-			ArrayList<PWC> PWEPClist = PWC.FindPWCs(PWdata[loc],PW20p,PW60p,maxNonePCDays,minPCDays); 
+			ArrayList<PWC> PWEPClist = PWC.FindPWCs(flooding_prediction.Start_Date,PWdata[loc]
+					,PW20p,PW60p,maxNonePCDays,minPCDays); 
 			PWEPClist = PWC.PWCRangeByAverage(PWEPClist, PW90p,Double.MAX_VALUE,"EPC");
 			PWC.SortPWCbyStartDate(PWEPClist);
 			//System.out.println(loc+":="+PWEPClist.size());
@@ -218,9 +222,11 @@ public class PWLocation implements Comparable<PWLocation>{
 			,double PW20p, double PW60p,double PW90p) throws IOException {
 		
 		ArrayList<PWLocation> loclist = new ArrayList<PWLocation>();
-		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, flooding_prediction.totalSampleLocations, flooding_prediction.totalDays);
+		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, flooding_prediction.totalSampleLocations
+				,(int) flooding_prediction.Data_start_day
+				,(int) flooding_prediction.Data_end_day);
 		for (int loc=0;loc<flooding_prediction.totalSampleLocations;loc++) {
-			ArrayList<PWC> PWEPClist = PWC.FindPWCs(PWdata[loc],PW20p,PW60p,maxNonePCDays,minPCDays); 
+			ArrayList<PWC> PWEPClist = PWC.FindPWCs(flooding_prediction.Start_Date,PWdata[loc],PW20p,PW60p,maxNonePCDays,minPCDays); 
 			PWEPClist = PWC.PWCRangeByAverage(PWEPClist, PW90p,Double.MAX_VALUE,"EPC");
 			PWC.SortPWCbyStartDate(PWEPClist);
 			//System.out.println(loc+":="+PWEPClist.size());
@@ -237,9 +243,11 @@ public class PWLocation implements Comparable<PWLocation>{
 			,double PW20p, double PW60p,double PW90p) throws IOException {
 
 		ArrayList<PWLocation> loclist = new ArrayList<PWLocation>();
-		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, flooding_prediction.totalSampleLocations, flooding_prediction.totalDays);
+		double[][] PWdata = DataLoader.loadingData(featureFilename, delimit2, flooding_prediction.totalSampleLocations
+				, (int)flooding_prediction.Data_start_day
+				, (int)flooding_prediction.Data_end_day);
 		for (int loc=0;loc<flooding_prediction.totalSampleLocations;loc++) {
-			ArrayList<PWC> PWEPClist = PWC.FindPWCs(PWdata[loc],PW20p,PW60p,maxNonePCDays,minPCDays); 
+			ArrayList<PWC> PWEPClist = PWC.FindPWCs(flooding_prediction.Start_Date, PWdata[loc],PW20p,PW60p,maxNonePCDays,minPCDays); 
 			PWEPClist = PWC.PWCRangeByAverage(PWEPClist, PW90p,Double.MAX_VALUE,"EPC");
 			PWC.SortPWCbyStartDate(PWEPClist);
 			//System.out.println(loc+":="+PWEPClist.size());

@@ -20,7 +20,7 @@ import java.util.GregorianCalendar;
  */
 public class PWC implements Comparable<PWC>{
 	private static int maxPCSearchdays =94;
-	private Calendar BASE_DATE = flooding_prediction.Base_Date;
+	public Calendar BASE_DATE;
 
 	public int start_date;
 	public int end_date;
@@ -30,11 +30,12 @@ public class PWC implements Comparable<PWC>{
 	public String classlable; // PC or EPC
 	public String predictlable; // PC or EPC
 	
-	public PWC(int s_date,int e_date,double avg){
+	public PWC(Calendar Base_Date,int s_date,int e_date,double avg){
 		start_date =s_date;
 		end_date = e_date;
 		average = avg;
 		values = new double[e_date-s_date+1];
+		BASE_DATE = Base_Date;
 		//BASE_DATE.add(Calendar.DATE, flooding_prediction.UsingData_start_day);
 	}
 	
@@ -106,7 +107,7 @@ public class PWC implements Comparable<PWC>{
 				+" "+ String.format("%.7f", this.getStdDev())+" "+getStartDateString();
 	}
 	
-    private static void findOnePWC(double[] daily_data,int start, int end, double lowThreshold
+    private static void findOnePWC(Calendar Base_Date,double[] daily_data,int start, int end, double lowThreshold
     		,double PCThreshold, int maxNonePCDays, int minPCDays ,ArrayList<PWC> pwclist ){
     	double max = daily_data[start]-1;
     	int max_day=start;
@@ -163,7 +164,7 @@ public class PWC implements Comparable<PWC>{
     					sum+=daily_data[i];
     				}
     				double average= sum/(double)PWC_length;
-					PWC pwc = new PWC(left_index,right_index, average);
+					PWC pwc = new PWC(Base_Date, left_index,right_index, average);
 					int day=0;
 					for (int i=left_index;i<=right_index;i++) {
 						pwc.values[day++]=daily_data[i];
@@ -185,11 +186,11 @@ public class PWC implements Comparable<PWC>{
     			}     				
     			// find the PWC in the range of the rest of left hand size
     			if (left_index <= start) {left_index=start+1;}
-				findOnePWC(daily_data,start,left_index-1,lowThreshold
+				findOnePWC(Base_Date, daily_data,start,left_index-1,lowThreshold
 						,PCThreshold,maxNonePCDays,minPCDays,pwclist);
 				// find the PWC in the range of the rest of right hand size
 				if (right_index >= end) {right_index=end-1;}
-				findOnePWC(daily_data,right_index+1,end,lowThreshold
+				findOnePWC(Base_Date,daily_data,right_index+1,end,lowThreshold
 						,PCThreshold,maxNonePCDays,minPCDays,pwclist);    				
     		} else { // there is no any single day in this range has the value higher than Threshold
     			//System.out.println("there is no any single day in this range has the value higher than Threshold");
@@ -226,10 +227,10 @@ public class PWC implements Comparable<PWC>{
     	);    	
     }
 	
-    public static ArrayList<PWC> AllPCsList(double[] daily_data,int sday, int minPCDays){
+    public static ArrayList<PWC> AllPCsList(Calendar Base_Date, double[] daily_data,int sday, int minPCDays){
     	ArrayList<PWC> pcs= new ArrayList<PWC>();
     	for (int i=minPCDays-1;i<daily_data.length;i++) {
-    		PWC p = new PWC(sday,sday+i, 0);
+    		PWC p = new PWC(Base_Date, sday,sday+i, 0);
     		p.values=Arrays.copyOfRange(daily_data, 0, i);
     		p.average = p.getMean();
     		pcs.add(p);
@@ -238,11 +239,11 @@ public class PWC implements Comparable<PWC>{
     	return pcs;
     }
     
-    public static PWC maxPC(double[] daily_data,int sday, int minPCDays){
+    public static PWC maxPC(Calendar Base_Date, double[] daily_data,int sday, int minPCDays){
     	PWC pwc=null;
     	double max=Double.NEGATIVE_INFINITY;
     	for (int i=minPCDays-1, days=0;(i<daily_data.length) && (days<=maxPCSearchdays);i++, days++) {
-    		PWC p = new PWC(sday,sday+i, 0);
+    		PWC p = new PWC(Base_Date,sday,sday+i, 0);
     		p.values=Arrays.copyOfRange(daily_data, 0, i);
     		p.average = p.getMean();
     		if (p.average > max) {
@@ -255,16 +256,16 @@ public class PWC implements Comparable<PWC>{
     }
     
     
-    public static ArrayList<PWC> FindPWCs(double[] daily_data,double lowThreshold
+    public static ArrayList<PWC> FindPWCs(Calendar Base_date, double[] daily_data,double lowThreshold
     		,double PCThreshold, int maxNonePCDays, int minPCDays) {
     	
     	ArrayList<PWC> PWCs = new ArrayList<PWC>();
     	ArrayList<PWC> PCs = new ArrayList<PWC>();
-    	findOnePWC(daily_data,0,daily_data.length-1,lowThreshold,PCThreshold,maxNonePCDays,minPCDays,PWCs);
+    	findOnePWC(Base_date, daily_data,0,daily_data.length-1,lowThreshold,PCThreshold,maxNonePCDays,minPCDays,PWCs);
     	for (PWC pwc:PWCs) {
     		if (pwc.getlength() > minPCDays) { // find overlapping PC and EPC in PWC
     			for (int i=0; i<(pwc.getlength()-minPCDays);i++) {
-    				PCs.add(maxPC( Arrays.copyOfRange(pwc.values, i, pwc.getlength()-1),pwc.start_date+i ,minPCDays));
+    				PCs.add(maxPC(Base_date,Arrays.copyOfRange(pwc.values, i, pwc.getlength()-1),pwc.start_date+i ,minPCDays));
     			}
     		} else {
     			PCs.add(pwc);
@@ -455,7 +456,9 @@ public class PWC implements Comparable<PWC>{
 		
 		for (int f=0;f<featureFiles.length;f++) {
 			// read from each feature file
-			double[][] featuredata = DataLoader.loadingData(featureFiles[2],"\\s+",flooding_prediction.totalSampleLocations,flooding_prediction.totalDays);
+			double[][] featuredata = DataLoader.loadingData(featureFiles[2],"\\s+",flooding_prediction.totalSampleLocations
+					,(int)flooding_prediction.Data_start_day
+					,(int)flooding_prediction.Data_end_day);
 			for (int PCi=0;PCi<PClist.size();PCi++) {
 				int PCe = PClist.get(PCi).start_date-back; // current EPS's end date
 				int PCs =PCe-days+1; // current EPS's start date
