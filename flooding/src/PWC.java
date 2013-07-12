@@ -35,7 +35,7 @@ public class PWC implements Comparable<PWC>{
 		end_date = e_date;
 		average = avg;
 		values = new double[e_date-s_date+1];
-		BASE_DATE = Base_Date;
+		this.BASE_DATE = new GregorianCalendar(Base_Date.get(Calendar.YEAR),Base_Date.get(Calendar.MONTH),Base_Date.get(Calendar.DAY_OF_MONTH));
 		//BASE_DATE.add(Calendar.DATE, flooding_prediction.UsingData_start_day);
 	}
 	
@@ -44,6 +44,7 @@ public class PWC implements Comparable<PWC>{
 		end_date = pwc.end_date;
 		average = pwc.average;
 		values = Arrays.copyOf(pwc.values, pwc.values.length);
+		BASE_DATE = new GregorianCalendar(pwc.BASE_DATE.get(Calendar.YEAR),pwc.BASE_DATE.get(Calendar.MONTH),pwc.BASE_DATE.get(Calendar.DAY_OF_MONTH));
 		if ( pwc.classlable != null){
 			classlable = new String(pwc.classlable);
 		}
@@ -74,7 +75,7 @@ public class PWC implements Comparable<PWC>{
 	}
 	
 	public Calendar getStartDate(){
-		Calendar cal= (Calendar)BASE_DATE.clone();
+		Calendar cal = new GregorianCalendar(this.BASE_DATE.get(Calendar.YEAR), this.BASE_DATE.get(Calendar.MONTH), this.BASE_DATE.get(Calendar.DAY_OF_MONTH));
 		cal.add(Calendar.DATE, start_date);
 		return cal;
 	}

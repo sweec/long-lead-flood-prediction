@@ -23,8 +23,8 @@ public class flooding_prediction {
 	//static public long Data_end_day = 23010-11688; //1980-1-1 to 2010-12-31
 	//static int UsingData_start_day = 18993, UsingData_end_day = 23010; //2000-1-1 to 2010-12-31
 	//static int UsingData_start_day = 0, UsingData_end_day = 23010;
-	static public int trainData_start_year = 1980, trainData_end_year = 2004;
-	static public int testData_start_year = 2005, testData_end_year = 2010;
+	static public int trainData_start_year = 2001, trainData_end_year = 2010;
+	static public int testData_start_year = 2001, testData_end_year = 2010;
 	static public int totalDays = (int)(Data_end_day-Data_start_day+1) , totalSampleLocations = 5328;
 	static public int maxNonePCDays = 2, minPCDays = 7;
 	static public double lowPercentile = 0.2, PCPercentile=0.6, PCLowBound = 0.7, PCUpBound = 0.8 , EPCPercentile=0.90;
@@ -111,6 +111,7 @@ public class flooding_prediction {
 		System.out.println("PCThreshold:"+PCThreshold);
 		System.out.println("EPCThreshold:"+EPCThreshold);
 		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+		
 		System.out.println("pwclist.size:"+pwclist.size());
 		//PWC.SortPWCbyLength(pwclist);
 		//print out all the PCs
@@ -211,9 +212,12 @@ public class flooding_prediction {
 	
 	public static void main(String[] args) throws Exception {
 		
+		run();
+		/*
 		Run_maxNonePCDays(1, 2, true,new Callable<Void>() {
 			   public Void call() throws Exception {
 			       return Run_minPCDays(5, 9, true,null); }});
+		*/
 		
 		// Generating the one-day feature data sets
 		/*
