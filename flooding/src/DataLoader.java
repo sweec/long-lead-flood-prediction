@@ -287,13 +287,13 @@ public class DataLoader {
 		//convertGeoData("../hw4/data/PW.txt","PW","../hw4/data/PW_all.csv");
 		//convertCSVtoArff("./data/data_Precipitation/PW.csv","./data/PW.arff");
 		
-		/*
+		
 		for (int i=0;i<DataFiles.length;i++){
 			CopyData(DataFiles[i],featureFiles[i],11688,23010);
 		}
 	
 		CopyData("./data/text/PRECIP2_1948-2010.txt","./data/text/PRECIP2_1980-2010.txt",11688,23010);
-		*/
+		
 		/*
 		double[][] PWdata = DataLoader.loadingData(featureFiles[2],"\\s+",flooding_prediction.totalSampleLocations,flooding_prediction.totalDays);	
 		saveArrayData(PWdata,"\\s",transFiles[2]);
