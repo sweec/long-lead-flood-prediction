@@ -524,7 +524,7 @@ public class PWC implements Comparable<PWC>{
 						int i=0;
 						String[] values = line.split(delimit);
 						for (int id:ids) {
-							dataForPC[i][f][r][index] = Double.parseDouble(values[id]);	// skip 1st value
+								dataForPC[i][f][r][index] = Double.parseDouble(values[id+1]);	// skip 1st value
 							i++;
 						} 
 					} else if (day>PCe) { // the day has passed this EPC
