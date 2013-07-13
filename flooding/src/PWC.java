@@ -9,6 +9,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
+import java.util.Random;
 
 /**
  * 
@@ -282,7 +283,7 @@ public class PWC implements Comparable<PWC>{
     	ArrayList<PWC> PCs = new ArrayList<PWC>();
     	
     	for (PWC pwc:list){
-    		if ((pwc.average >= low) && (pwc.average <= high)) {
+    		if ((pwc.average >= low) && (pwc.average < high)) {
     			PWC pc = new PWC(pwc);
     			pc.classlable= lable;
     			PCs.add(pc);
@@ -564,6 +565,18 @@ public class PWC implements Comparable<PWC>{
     		, String idFile, String delimit2, String outFile) throws IOException
     {
     	PWC.createWekaFile(features,featureFiles,delimit, PClist,days,back,PWLocation.LoadLocData(idFile, delimit2),outFile);
+    }
+    
+    
+    // Randomly selection the given number of PCs from the given list of PCs
+    public static ArrayList<PWC> RandomSelection(ArrayList<PWC> list, int num, int seed){
+    	ArrayList<PWC> pwc = new ArrayList<PWC>(list);
+    	
+    	Random rn = new Random(seed);
+    	while (pwc.size() > num) {
+    		pwc.remove(rn.nextInt(pwc.size()));
+    	}
+    	return pwc;
     }
     
     public static void main(String[] args) {

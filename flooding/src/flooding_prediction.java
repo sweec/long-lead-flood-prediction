@@ -27,7 +27,9 @@ public class flooding_prediction {
 	static public int testData_start_year = 2001, testData_end_year = 2010;
 	static public int totalDays = (int)(Data_end_day-Data_start_day+1) , totalSampleLocations = 5328;
 	static public int maxNonePCDays = 2, minPCDays = 7;
-	static public double lowPercentile = 0.2, PCPercentile=0.6, PCLowBound = 0.7, PCUpBound = 0.8 , EPCPercentile=0.90;
+	static public double lowPercentile = 0.2, PCPercentile=0.6, EPCPercentile=0.90;
+	static public double PCLowBound = 0.6, PCUpBound = 0.9;
+	static public boolean RandomselectPC = false;
 	static public String idFile[] = {"loc_Individuals.txt","loc_Iowa.txt","loc_All.txt"};
 	static public int PercentileUsed = 0; //0: Individuals  1: Iowa  2: All locations
 	static public int start_month = 5, end_month = 9; // summer time = May to September
@@ -198,14 +200,6 @@ public class flooding_prediction {
 			}
 		}
 		*/
-		// looking for the PCs of Iowa
-		ArrayList<PWC> AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
-		ArrayList<PWC> TestPCs = PWC.PWCRangeByYear(AllPCs, testData_start_year, testData_end_year);
-		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
-		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
-		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
-		PWC.StorePCData(TrainPCs,IowaPCFile);
-		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
 		// looking for the EPCs of Iowa
 		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
 		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
@@ -213,6 +207,23 @@ public class flooding_prediction {
 		ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
 		trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
 		PWC.StorePCData(trainEPCs,IowaEPCFile);
+
+		
+		ArrayList<PWC> AllPCs = null;
+		// looking for the PCs of Iowa
+		if (RandomselectPC) {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
+			AllPCs = PWC.RandomSelection(AllPCs, trainEPCs.size(), 1);
+		}
+		else {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
+		}
+		ArrayList<PWC> TestPCs = PWC.PWCRangeByYear(AllPCs, testData_start_year, testData_end_year);
+		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
+		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
+		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
+		PWC.StorePCData(TrainPCs,IowaPCFile);
+		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
 		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
 		// combine PC and EPC into one list
 		for (PWC epc:trainEPCs) {
