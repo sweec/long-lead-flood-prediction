@@ -376,7 +376,7 @@ public class PWC implements Comparable<PWC>{
 						int index = day-EPCsr;
 						int i=0;
 						for (int id:ids) {
-							dataForEPC[i][f][r][index] = Double.parseDouble(values[id]);	// skip 1st value
+							dataForEPC[i][f][r][index] = Double.parseDouble(values[id+1]);	// skip 1st value
 							i++;
 						}
 					}
@@ -395,7 +395,7 @@ public class PWC implements Comparable<PWC>{
 						int index = day-PCsr;
 						int i=0;
 						for (int id:ids) {
-							dataForPC[i][f][r][index] = Double.parseDouble(values[id]);	// skip 1st value
+							dataForPC[i][f][r][index] = Double.parseDouble(values[id+1]);	// skip 1st value
 							i++;
 						}
 					} 
