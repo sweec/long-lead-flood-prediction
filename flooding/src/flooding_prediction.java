@@ -37,6 +37,7 @@ public class flooding_prediction {
 	static public double confidence_start = -1, confidence_end = Double.POSITIVE_INFINITY;
 	static double[] confidencethresholds = new double[]{0,0.1,0.11,0.12,0.15};
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
+	static public int crossValFolds =5;
 
 	private static String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
 	
@@ -230,8 +231,8 @@ public class flooding_prediction {
 		String idUsed2 = "locUsed2_"+support_start+".txt";
 		
 		int back =5, backdays=6;
-		double PW20p = 4.85, PW60p=19.87, PW90p=43.27; // from all locations
-		double PW20pIA = 7.53, PW60pIA=18.63, PW90pIA=34.08; // from 2 locations of Iowa (3941, 3978)
+		double PW20p = 4.85, PW60p=19.87, PW90p=43.27; // from all locations 1980~2010
+		double PW20pIA = 7.53, PW60pIA=18.63, PW90pIA=34.08; // from 2 locations of Iowa (3941, 3978) 1980~2010
 
 		PWC.SortPWCbyStartDate(TrainPCs);
 		PWC.SortPWCbyStartDate(TestPCs);
@@ -244,19 +245,32 @@ public class flooding_prediction {
 		while (AllEPCs.get(0).start_date <=(backdays+back)) {
 			AllEPCs.remove(0);
 		}
-		
-		/*
+
 		// find location support and confidence based on the selection of PercentileUsed and then save to a file
 		if (PercentileUsed==0) { //0: Individuals  1: Iowa  2: All locations
 			PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays);
 		} else {
+			// Calculate the percentile values
+			double[][] PWdata = DataLoader.loadingData(featureFiles[2], delimit2, 
+					flooding_prediction.totalSampleLocations,
+					(int)flooding_prediction.Data_start_day,
+					(int)flooding_prediction.Data_end_day);
 			if (PercentileUsed==1) {
+				double PWdataIA[][] = new double[][]{PWdata[3941],PWdata[3978]};
+				// from Iowa's 2 locations
+				PW20pIA = StdStats.percentile(PWdataIA,flooding_prediction.lowPercentile); 
+				PW60pIA = StdStats.percentile(PWdataIA,flooding_prediction.PCPercentile);
+				PW90pIA = StdStats.percentile(PWdataIA,flooding_prediction.EPCPercentile);
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20pIA,PW60pIA,PW90pIA);
 			} else { //(PercentileUsed==2)
+				// from all locations
+				PW20p = StdStats.percentile(PWdata,flooding_prediction.lowPercentile); 
+				PW60p = StdStats.percentile(PWdata,flooding_prediction.PCPercentile);
+				PW90p = StdStats.percentile(PWdata,flooding_prediction.EPCPercentile);
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20p,PW60p,PW90p);
 			}
 		}
-		*/
+		
 		
 		// load the location support and confidence data from selected file
 		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
@@ -279,7 +293,11 @@ public class flooding_prediction {
 		System.out.println("Creating test set~");
 		PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locs, testFile);
 		
-		return RunWeka.run(RunWeka.getBaseClassifier(baseclassifier),null,trainFile, testFile);
+		if (crossValFolds >1) {
+			return RunWeka.runFolds(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,trainFile);
+		} else {
+			return RunWeka.run(RunWeka.getBaseClassifier(baseclassifier),null,trainFile, testFile);
+		}
 	}
 	
 	public static void main(String[] args) throws Exception {

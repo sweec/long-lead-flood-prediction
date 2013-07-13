@@ -200,10 +200,12 @@ public class PWLocation implements Comparable<PWLocation>{
 				flooding_prediction.totalSampleLocations,
 				(int)flooding_prediction.Data_start_day,
 				(int)flooding_prediction.Data_end_day);
-		double PW20p = StdStats.percentile(PWdata,flooding_prediction.lowPercentile); 
-		double PW60p = StdStats.percentile(PWdata,flooding_prediction.PCPercentile);
-		double PW90p = StdStats.percentile(PWdata,flooding_prediction.EPCPercentile);;
+		
 		for (int loc=0;loc<flooding_prediction.totalSampleLocations;loc++) {
+			// using individual location's percentile
+			double PW20p = StdStats.percentile(PWdata[loc],flooding_prediction.lowPercentile); 
+			double PW60p = StdStats.percentile(PWdata[loc],flooding_prediction.PCPercentile);
+			double PW90p = StdStats.percentile(PWdata[loc],flooding_prediction.EPCPercentile);
 			ArrayList<PWC> PWEPClist = PWC.FindPWCs(flooding_prediction.Start_Date,PWdata[loc]
 					,PW20p,PW60p,maxNonePCDays,minPCDays); 
 			PWEPClist = PWC.PWCRangeByAverage(PWEPClist, PW90p,Double.MAX_VALUE,"EPC");
