@@ -33,9 +33,10 @@ public class flooding_prediction {
 	static public String idFile[] = {"loc_Individuals.txt","loc_Iowa.txt","loc_All.txt"};
 	static public int PercentileUsed = 0; //0: Individuals  1: Iowa  2: All locations
 	static public int start_month = 5, end_month = 9; // summer time = May to September
+	static public double support_percentile_start = 0.9, support_percentile_end = 1;
 	static public int support_start = 0, support_end = Integer.MAX_VALUE;
-	static int[] supportranges = new int[]{0,100,200,392,9999};
-	static int[] supportthresholds = new int[]{0,100,150,200,250};
+	static double[] supportranges = new double[]{0,0.2,0.4,0.6,0.8,1};
+	static double[] supportthresholds = new double[]{0,0.2,0.4,0.6,0.8};
 	static public double confidence_start = -1, confidence_end = Double.POSITIVE_INFINITY;
 	static double[] confidencethresholds = new double[]{0,0.1,0.11,0.12,0.15};
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
@@ -70,8 +71,8 @@ public class flooding_prediction {
 			ClassificationResults.writetitle(outresult);
 		}
 		for (int s=start;s <= end;s++) {
-			support_start = supportranges[s];
-			support_end = supportranges[s+1];
+			support_percentile_start = supportranges[s];
+			support_percentile_end = supportranges[s+1];
 			if (func == null) {
 				 ClassificationResults result = run();
 				 result.printout();
@@ -92,7 +93,7 @@ public class flooding_prediction {
 			ClassificationResults.writetitle(outresult);
 		}
 		for (int s=start;s <= end;s++) {
-			support_start = supportthresholds[s];
+			support_percentile_start = supportthresholds[s];
 			support_end = Integer.MAX_VALUE;
 			if (func == null) {
 				 ClassificationResults result = run();
@@ -239,7 +240,7 @@ public class flooding_prediction {
 		String delimit2 = "\\s+";
 		String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
 		String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
-		String idUsed2 = "locUsed2_"+support_start+".txt";
+		
 		
 		int back =5, backdays=6;
 		double PW20p = 4.85, PW60p=19.87, PW90p=43.27; // from all locations 1980~2010
@@ -285,11 +286,21 @@ public class flooding_prediction {
 		
 		// load the location support and confidence data from selected file
 		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
+		PWLocation.SortLocbySupport(loclist);//Support high to low
 		// filter out the locations by support range
+		int index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+		support_start =loclist.get(index).support;
+		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
+		if (index<=0){ // use threshold
+			support_end = Integer.MAX_VALUE;
+		} else { // use range
+			support_end =loclist.get(index).support;
+		}
 		ArrayList<PWLocation> locs= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
 		// filter out the locations by confidence range
 		locs=PWLocation.LOCRangeByConfidence(locs,confidence_start,confidence_end);
 		// store the filtered location result into file 
+		String idUsed2 = "locUsed2_"+support_start+".txt";
 		PWLocation.StoreLocData(locs, idUsed2);
 		
 		/* creat weka arff file using location file 

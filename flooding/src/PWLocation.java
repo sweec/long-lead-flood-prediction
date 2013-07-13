@@ -151,6 +151,16 @@ public class PWLocation implements Comparable<PWLocation>{
     	);    	
     }
 	
+	public static int MaxSupport(ArrayList<PWLocation> loclist){
+		PWLocation loc = Collections.max(loclist, new Comparator<PWLocation>() { // high to low
+					public int compare(PWLocation o1, PWLocation o2){ 
+						return (o2.support-o1.support);
+					}  
+				}
+						);
+		return loc.support;
+	}
+	
 	public static void SortLocbyConfidence(ArrayList<PWLocation> loclist){
     	Collections.sort(loclist); 	
     }

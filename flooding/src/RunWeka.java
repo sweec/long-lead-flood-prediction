@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.Callable;
 
 import weka.classifiers.Classifier;
 import weka.core.Instances;
@@ -132,7 +133,10 @@ public class RunWeka {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		RunWeka.runSingleDay(5, 10, "./EPC_arff/Single/Train_","./EPC_arff/Single/Test_");
+		//RunWeka.runSingleDay(5, 10, "./EPC_arff/Single/Train_","./EPC_arff/Single/Test_");
+		flooding_prediction.Run_maxNonePCDays(1, 2, true,new Callable<Void>() {
+			   public Void call() throws Exception {
+			       return flooding_prediction.Run_minPCDays(5, 9, true,null); }});
 	}
 
 }
