@@ -52,6 +52,38 @@ public class RunWeka {
 				,(int)eval.numFalseNegatives(classid), classifier); 
 	}
 	
+	public static ClassificationResults runFolds(Classifier classifier, String[] options, int folds, String trainfilepath) throws Exception {
+		Instances trainset = new Instances(new BufferedReader(new FileReader(trainfilepath)));
+		int numoftest = trainset.numInstances();
+		trainset.setClassIndex(trainset.attribute("class").index());
+		double[] truth = new double[numoftest];
+		for (int i=0;i<numoftest;i++) {
+			truth[i]=trainset.instance(i).classValue();
+		}
+		
+		trainset.setClassIndex(trainset.attribute("class").index());
+		classifier.setOptions(options);
+		classifier.buildClassifier(trainset);
+		Evaluation eval = new Evaluation(trainset); 
+		eval.crossValidateModel(classifier, trainset,folds, new java.util.Random(1));
+
+		System.out.println(eval.toSummaryString(true));
+		System.out.println(eval.toClassDetailsString());
+		
+		System.out.println("TP:" +eval.numTruePositives(0)+" FP:" +eval.numFalsePositives(0)
+				+" TN:" +eval.numTrueNegatives(0)+" FN:"+eval.numFalseNegatives(0));
+		System.out.println("Accuracy = " +eval.pctCorrect());
+		System.out.println("F1 = " +eval.fMeasure(0));
+		System.out.println("Precision = " +eval.precision(0));
+		System.out.println("Recall = " +eval.recall(0));
+		
+		int classid = trainset.classAttribute().indexOfValue("EPC");
+		return new ClassificationResults((int)eval.numTruePositives(classid)
+				,(int)eval.numFalsePositives(classid)
+				,(int)eval.numTrueNegatives(classid)
+				,(int)eval.numFalseNegatives(classid), classifier); 
+	}
+	
 	public static void runSingleDay(int from_day, int end_day, String trainfilepath,String testfilepath) throws Exception{
 		int totaldays = end_day-from_day+1;
 		Classifier[] classifiers = new Classifier[totaldays];
