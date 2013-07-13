@@ -32,7 +32,10 @@ public class flooding_prediction {
 	static public int PercentileUsed = 0; //0: Individuals  1: Iowa  2: All locations
 	static public int start_month = 5, end_month = 9; // summer time = May to September
 	static public int support_start = 0, support_end = Integer.MAX_VALUE;
+	static int[] supportranges = new int[]{0,100,200,392,9999};
+	static int[] supportthresholds = new int[]{0,100,150,200,250};
 	static public double confidence_start = -1, confidence_end = Double.POSITIVE_INFINITY;
+	static double[] confidencethresholds = new double[]{0,0.1,0.11,0.12,0.15};
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
 
 	private static String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
@@ -44,6 +47,72 @@ public class flooding_prediction {
 		}
 		for (int days=start;days <= end;days++) {
 			maxNonePCDays = days;//
+			if (func == null) {
+				 ClassificationResults result = run();
+				 result.printout();
+				 outresult.write(result.one_record());
+				 outresult.flush();
+			} else {
+				func.call();
+			}			
+		}
+		outresult.close();
+		
+		return null;
+	}
+	
+	public static Void Run_supportRange(int start, int end, boolean append, Callable<Void> func) throws Exception {
+		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
+		if (! append){
+			ClassificationResults.writetitle(outresult);
+		}
+		for (int s=start;s <= end;s++) {
+			support_start = supportranges[s];
+			support_end = supportranges[s+1];
+			if (func == null) {
+				 ClassificationResults result = run();
+				 result.printout();
+				 outresult.write(result.one_record());
+				 outresult.flush();
+			} else {
+				func.call();
+			}			
+		}
+		outresult.close();
+		
+		return null;
+	}
+	
+	public static Void Run_supportThreshold(int start, int end, boolean append, Callable<Void> func) throws Exception {
+		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
+		if (! append){
+			ClassificationResults.writetitle(outresult);
+		}
+		for (int s=start;s <= end;s++) {
+			support_start = supportthresholds[s];
+			support_end = Integer.MAX_VALUE;
+			if (func == null) {
+				 ClassificationResults result = run();
+				 result.printout();
+				 outresult.write(result.one_record());
+				 outresult.flush();
+			} else {
+				func.call();
+			}			
+		}
+		outresult.close();
+		
+		return null;
+	}
+	
+	public static Void Run_confThreshold(int start, int end, boolean append, Callable<Void> func) throws Exception {
+		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
+		if (! append){
+			ClassificationResults.writetitle(outresult);
+		}
+		for (int s=start;s <= end;s++) {
+			confidence_start = confidencethresholds[s];
+			confidence_end = Double.POSITIVE_INFINITY;
 			if (func == null) {
 				 ClassificationResults result = run();
 				 result.printout();
@@ -176,6 +245,7 @@ public class flooding_prediction {
 			AllEPCs.remove(0);
 		}
 		
+		/*
 		// find location support and confidence based on the selection of PercentileUsed and then save to a file
 		if (PercentileUsed==0) { //0: Individuals  1: Iowa  2: All locations
 			PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays);
@@ -186,6 +256,7 @@ public class flooding_prediction {
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20p,PW60p,PW90p);
 			}
 		}
+		*/
 		
 		// load the location support and confidence data from selected file
 		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
@@ -200,6 +271,7 @@ public class flooding_prediction {
 		PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, idFile[PercentileUsed], delimit2,trainFile);
 		PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, idFile[PercentileUsed],delimit2, testFile);
 		*/
+		
 		
 		// creat weka file using loc ArrayList
 		System.out.println("Creating training set~");
@@ -237,7 +309,7 @@ public class flooding_prediction {
 		RunWeka.runSingleDay(8, 10, "./EPC_arff/Single/Train_","./EPC_arff/Single/Test_");
 		*/
 		/*
-		int[] supportranges = new int[]{0,10,620,1136,9999};
+		
 		for (i=0;i<supportranges.length-1;i++) {
 			locs=PWLocation.LOCRangeBySupport(loclist, supportranges[i], supportranges[i+1]);
 			//locs=PWLocation.LOCRangeByConfidence(locs,confThreshold,Double.POSITIVE_INFINITY);
