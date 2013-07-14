@@ -29,16 +29,16 @@ public class flooding_prediction {
 	static public int maxNonePCDays = 2, minPCDays = 7;
 	static public double lowPercentile = 0.2, PCPercentile=0.6, EPCPercentile=0.90;
 	static public double PCLowBound = 0.6, PCUpBound = 0.9;
-	static public boolean RandomselectPC = false;
+	static public boolean RandomselectPC = true;
 	static public String idFile[] = {"loc_Individuals.txt","loc_Iowa.txt","loc_All.txt"};
 	static public int PercentileUsed = 0; //0: Individuals  1: Iowa  2: All locations
 	static public int start_month = 5, end_month = 9; // summer time = May to September
-	static public double support_percentile_start = 0.9, support_percentile_end = 1;
+	static public double support_percentile_start = 0.6, support_percentile_end = 1;
 	static public int support_start = 0, support_end = Integer.MAX_VALUE;
 	static double[] supportranges = new double[]{0,0.2,0.4,0.6,0.8,1};
 	static double[] supportthresholds = new double[]{0,0.2,0.4,0.6,0.8};
-	static public double confidence_start = -1, confidence_end = Double.POSITIVE_INFINITY;
-	static double[] confidencethresholds = new double[]{0,0.1,0.11,0.12,0.15};
+	static public double confidence_start = 0.0, confidence_end = 1;
+	static double[] confidencethresholds = new double[]{0,0.15,0.2,0.25,0.3};
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
 	static public int crossValFolds =5;
 
@@ -183,6 +183,8 @@ public class flooding_prediction {
 		System.out.println("low:"+low);
 		System.out.println("PCThreshold:"+PCThreshold);
 		System.out.println("EPCThreshold:"+EPCThreshold);
+		System.out.println("PCUpBound:"+PCUPBOUND);
+		System.out.println("PCLowBound:"+PCLOWBOUND);
 		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
 		
 		System.out.println("pwclist.size:"+pwclist.size());
@@ -214,7 +216,6 @@ public class flooding_prediction {
 		// looking for the PCs of Iowa
 		if (RandomselectPC) {
 			AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
-			AllPCs = PWC.RandomSelection(AllPCs, trainEPCs.size(), 1);
 		}
 		else {
 			AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
@@ -223,6 +224,10 @@ public class flooding_prediction {
 		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
 		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
 		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
+		if (RandomselectPC) {
+			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
+			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
+		}
 		PWC.StorePCData(TrainPCs,IowaPCFile);
 		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
 		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
@@ -257,7 +262,7 @@ public class flooding_prediction {
 		while (AllEPCs.get(0).start_date <=(backdays+back)) {
 			AllEPCs.remove(0);
 		}
-
+/*
 		// find location support and confidence based on the selection of PercentileUsed and then save to a file
 		if (PercentileUsed==0) { //0: Individuals  1: Iowa  2: All locations
 			PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays);
@@ -282,7 +287,7 @@ public class flooding_prediction {
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20p,PW60p,PW90p);
 			}
 		}
-		
+*/		
 		
 		// load the location support and confidence data from selected file
 		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
@@ -292,7 +297,7 @@ public class flooding_prediction {
 		support_start =loclist.get(index).support;
 		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
 		if (index<=0){ // use threshold
-			support_end = Integer.MAX_VALUE;
+			support_end = PWLocation.MaxSupport(loclist)+1;
 		} else { // use range
 			support_end =loclist.get(index).support;
 		}
@@ -324,7 +329,10 @@ public class flooding_prediction {
 	
 	public static void main(String[] args) throws Exception {
 		
-		run();
+		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],false));
+		ClassificationResults.writetitle(outresult);
+		outresult.close();
+		Run_supportRange(0,4,true,null);
 		/*
 		Run_maxNonePCDays(1, 2, true,new Callable<Void>() {
 			   public Void call() throws Exception {
