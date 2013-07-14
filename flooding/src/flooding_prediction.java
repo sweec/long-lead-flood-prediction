@@ -581,11 +581,13 @@ public class flooding_prediction {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		
+		runInMemory();
+		/*
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],false));
 		ClassificationResults.writetitle(outresult);
 		outresult.close();
-		Run_supportRange(0,4,true,null);
+		Run_supportRange(4,4,true,null);
+		*/
 		/*
 		Run_maxNonePCDays(1, 2, true,new Callable<Void>() {
 			   public Void call() throws Exception {
