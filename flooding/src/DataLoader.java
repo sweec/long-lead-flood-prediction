@@ -30,6 +30,19 @@ public class DataLoader {
 	};
 	
 	public static String featureFiles[] = new String[] {
+		"./data/text/2010_Z1000.csv",
+		"./data/text/2010_T850.csv",
+		"./data/text/2010_PW.csv",
+		"./data/text/2010_U300.csv",
+		"./data/text/2010_U850.csv",
+		"./data/text/2010_V300.csv",
+		"./data/text/2010_V850.csv",
+		"./data/text/2010_Z300.csv",
+		"./data/text/2010_Z500.csv"
+	};
+	
+	/*
+	public static String featureFiles[] = new String[] {
 		"./data/text/Z1000.csv",
 		"./data/text/T850.csv",
 		"./data/text/PW.csv",
@@ -40,7 +53,7 @@ public class DataLoader {
 		"./data/text/Z300.csv",
 		"./data/text/Z500.csv"
 	};
-	
+	*/
 	public static String transFiles[] = new String[] {
 		"./data/text/Z1000_t.csv",
 		"./data/text/T850_t.csv",
@@ -361,10 +374,10 @@ public class DataLoader {
 		
 		
 		for (int i=0;i<DataFiles.length;i++){
-			CopyData(DataFiles[i],featureFiles[i],11688,23010);
+			CopyData(DataFiles[i],featureFiles[i],19359,23010);
 		}
 	
-		CopyData("./data/text/PRECIP2_1948-2010.txt","./data/text/PRECIP2_1980-2010.txt",11688,23010);
+		CopyData("./data/text/PRECIP2_1948-2010.txt","./data/text/PRECIP2_2001-2010.txt",19359,23010);
 		
 		/*
 		double[][] PWdata = DataLoader.loadingData(featureFiles[2],"\\s+",flooding_prediction.totalSampleLocations,flooding_prediction.totalDays);	

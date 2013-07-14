@@ -9,8 +9,8 @@ import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
 
 public class flooding_prediction {
-	static public Calendar Base_Date = new GregorianCalendar(1980, 0, 1); // first date's ID starts with 0
-	static public String IowaPrecipFile = "./data/text/PRECIP2_1980-2010.txt";
+	static public Calendar Base_Date = new GregorianCalendar(2001, 0, 1); // first date's ID starts with 0
+	static public String IowaPrecipFile = "./data/text/PRECIP2_2001-2010.txt";
 	static public String IowaPCFile = "IowaPCs.txt";
 	static public String IowaEPCFile = "IowaEPCs.txt";
 	static public Calendar Start_Date = new GregorianCalendar(2001, 0, 1);

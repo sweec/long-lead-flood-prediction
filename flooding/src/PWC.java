@@ -580,6 +580,11 @@ public class PWC implements Comparable<PWC>{
     }
     
     public static void main(String[] args) {
-    	
+    	Calendar base = new GregorianCalendar(1948, 0, 1);
+    	Calendar todate = new GregorianCalendar(2001, 0, 1);
+    	long days= (todate.getTimeInMillis() -base.getTimeInMillis())/(1000 * 60 * 60 * 24);
+    	System.out.println(days);
+    	base.add(Calendar.DATE, (int)days);
+    	System.out.println(base.get(Calendar.YEAR)+"-"+base.get(Calendar.ALL_STYLES)+"-"+base.get(Calendar.DAY_OF_MONTH));
     }
 }
