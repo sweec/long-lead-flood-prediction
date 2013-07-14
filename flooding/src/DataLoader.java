@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -11,6 +12,8 @@ import java.util.GregorianCalendar;
 public class DataLoader {
 	
 	//private Calendar BASE_DATE = new GregorianCalendar(1948, 0, 1);
+	
+	public static int Z1000 = 0, T850 = 1, PW = 2, U300 =3, U850 = 4, V300 = 5, V850 = 6, Z300 = 7, Z500 = 8;
 	
 	public static String features[] = new String[] {"Z1000", "T850", "PW", "U300", "U850", "V300", "V850", "Z300", "Z500"};
 	
@@ -278,7 +281,76 @@ public class DataLoader {
 			e.printStackTrace();
 		}
 	}
-	/**
+
+	public static double[][] readIndividualPercentiles(String file, int locNo, int pNo) throws NumberFormatException, IOException {
+		if (!new File(file).exists()) return null;
+		int lineNo = getLineNumber(file);
+		if (lineNo != locNo) {
+			System.out.println("Line number: "+lineNo+" not expected, want "+locNo);
+			return null;
+		}
+		
+		double[][] p = new double[locNo][pNo];
+    	BufferedReader reader = new BufferedReader(new FileReader(file));
+    	String delimit="\\s+";
+		String line="";
+		int loc=0;
+		while ((line = reader.readLine()) != null) {
+			String[] values = line.split(delimit);
+			if (values.length<pNo) break;
+			for (int i=0;i<pNo;i++)
+				p[loc][i] = Double.parseDouble(values[i]);
+			loc++;
+		}
+		reader.close();
+		if (loc<locNo) return null;
+		return p;
+	}
+	
+	public static void writeIndividualPercentiles(String file, double[][] p) throws NumberFormatException, IOException {
+		if (p == null || p[0] == null) return;
+		BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+    	int pNo = p[0].length;
+    	for (int i=0;i<p.length;i++) {
+ 			for (int j=0;j<pNo-1;j++)
+				writer.write(p[i][j]+" ");
+ 			writer.write(p[i][pNo-1]+"");
+ 	 		if (i<p.length-1)
+ 	 			writer.write("\r\n");
+    	}
+    	writer.close();
+	}
+	
+	public static double[] readPercentiles(String file, int pNo) throws NumberFormatException, IOException {
+		if (!new File(file).exists()) return null;
+		int lineNo = getLineNumber(file);
+		if (lineNo != pNo) {
+			System.out.println("Line number: "+lineNo+" not expected, want "+pNo);
+			return null;
+		}
+		
+		double[] p = new double[pNo];
+    	BufferedReader reader = new BufferedReader(new FileReader(file));
+		String line="";
+		int i=0;
+		while ((line = reader.readLine()) != null) {
+				p[i] = Double.parseDouble(line);
+			i++;
+		}
+		reader.close();
+		return p;
+	}
+	
+	public static void writePercentiles(String file, double[] p) throws NumberFormatException, IOException {
+		if (p == null) return;
+		BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+    	for (int j=0;j<p.length-1;j++)
+    		writer.write(p[j]+"\r\n");
+    	writer.write(p[p.length-1]+"");
+     	writer.close();
+	}
+	
+    /**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException {

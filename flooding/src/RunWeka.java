@@ -1,10 +1,12 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 import weka.classifiers.Classifier;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.classifiers.Evaluation;
 
@@ -130,6 +132,153 @@ public class RunWeka {
 		System.out.println("F1 = " +((tp+tp)/(tp+fp+tp+fn)));
 		System.out.println("Precision = " +((tp)/(tp+fp)));
 		System.out.println("Recall = " +((tp)/(tp+fn)));
+	}
+	
+	public static ClassificationResults runInMemory(Classifier classifier, String[] options, double[][][] data, ArrayList<PWC> TrainPCs, ArrayList<PWC> testPCs
+			, int[] locs, int days, int back) throws Exception {
+		// Creating trainset and testset instances from scratch
+		
+		// Create attributes first
+		int numofattr = data.length*locs.length*days+1;
+		FastVector attributes = new FastVector(numofattr);
+		int attrIndex = 0;
+		for (int f=0;f<data.length;f++)
+			for (int i=0;i<locs.length;i++) 
+				for (int di=0;di<days;di++) {
+					attributes.addElement(new Attribute(DataLoader.features[f]+"_"+locs[i]+"_"+(back+days-1-di), attrIndex++));
+				}
+		FastVector classValues = new FastVector(2);
+		classValues.addElement("EPC");
+		classValues.addElement("PC");
+		Attribute classAttr = new Attribute("class", classValues, attrIndex);
+		attributes.addElement(classAttr);
+		
+		int numoftrain = TrainPCs.size(), numoftest = testPCs.size();
+		Instances trainset = new Instances("train_set", attributes, numoftrain);
+		Instances testset = new Instances("test_set", attributes, numoftest);
+		for (int e=0;e<numoftrain;e++) {
+			double[] instValues = new double[numofattr];
+			int index = 0;
+			PWC pc = TrainPCs.get(e);
+			for (int f=0;f<data.length;f++)
+				for (int i=0;i<locs.length;i++)
+					for (int di=0;di<days;di++) {
+						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
+					}
+			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			double weight = 1.0;
+			Instance inst = new Instance(weight, instValues);
+			inst.setDataset(trainset);
+			trainset.add(inst);
+		}
+		for (int e=0;e<numoftest;e++) {
+			double[] instValues = new double[numofattr];
+			int index = 0;
+			PWC pc = testPCs.get(e);
+			for (int f=0;f<data.length;f++)
+				for (int i=0;i<locs.length;i++)
+					for (int di=0;di<days;di++) {
+						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
+					}
+			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			double weight = 1.0;
+			Instance inst = new Instance(weight, instValues);
+			inst.setDataset(testset);
+			testset.add(inst);
+		}
+		
+		trainset.setClassIndex(attrIndex);
+		testset.setClassIndex(attrIndex);
+		classifier.setOptions(options);
+		classifier.buildClassifier(trainset);
+		Evaluation eval = new Evaluation(testset); 
+
+		//double[] results = eval.evaluateModel(classifier, testset);
+		double[] truth = new double[numoftest];
+		for (int i=0;i<numoftest;i++) {
+			truth[i]=testset.instance(i).classValue();
+		}
+		
+		System.out.println(eval.toSummaryString(true));
+		System.out.println(eval.toClassDetailsString());
+		
+		System.out.println("TP:" +eval.numTruePositives(0)+" FP:" +eval.numFalsePositives(0)
+				+" TN:" +eval.numTrueNegatives(0)+" FN:"+eval.numFalseNegatives(0));
+		System.out.println("Accuracy = " +eval.pctCorrect());
+		System.out.println("F1 = " +eval.fMeasure(0));
+		System.out.println("Precision = " +eval.precision(0));
+		System.out.println("Recall = " +eval.recall(0));
+		
+		int classid = testset.classAttribute().indexOfValue("EPC");
+		return new ClassificationResults((int)eval.numTruePositives(classid)
+				,(int)eval.numFalsePositives(classid)
+				,(int)eval.numTrueNegatives(classid)
+				,(int)eval.numFalseNegatives(classid), classifier); 
+	}
+	
+	public static ClassificationResults runFoldsInMemory(Classifier classifier, String[] options, int folds, double[][][] data, ArrayList<PWC> TrainPCs
+			, int[] locs, int days, int back) throws Exception {
+		// Creating trainset and testset instances from scratch
+		
+		// Create attributes first
+		int numofattr = data.length*locs.length*days+1;
+		FastVector attributes = new FastVector(numofattr);
+		int attrIndex = 0;
+		for (int f=0;f<data.length;f++)
+			for (int i=0;i<locs.length;i++) 
+				for (int di=0;di<days;di++) {
+					attributes.addElement(new Attribute(DataLoader.features[f]+"_"+locs[i]+"_"+(back+days-1-di), attrIndex++));
+				}
+		FastVector classValues = new FastVector(2);
+		classValues.addElement("EPC");
+		classValues.addElement("PC");
+		Attribute classAttr = new Attribute("class", classValues, attrIndex);
+		attributes.addElement(classAttr);
+		
+		int numoftrain = TrainPCs.size();
+		Instances trainset = new Instances("train_set", attributes, numoftrain);
+		for (int e=0;e<numoftrain;e++) {
+			double[] instValues = new double[numofattr];
+			int index = 0;
+			PWC pc = TrainPCs.get(e);
+			for (int f=0;f<data.length;f++)
+				for (int i=0;i<locs.length;i++)
+					for (int di=0;di<days;di++) {
+						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
+					}
+			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			double weight = 1.0;
+			Instance inst = new Instance(weight, instValues);
+			inst.setDataset(trainset);
+			trainset.add(inst);
+		}
+		
+		trainset.setClassIndex(trainset.attribute("class").index());
+		double[] truth = new double[numoftrain];
+		for (int i=0;i<numoftrain;i++) {
+			truth[i]=trainset.instance(i).classValue();
+		}
+		
+		classifier.setOptions(options);
+		classifier.buildClassifier(trainset);
+		Evaluation eval = new Evaluation(trainset); 
+		eval.crossValidateModel(classifier, trainset,folds, new java.util.Random(1));
+
+		System.out.println(eval.toSummaryString(true));
+		System.out.println(eval.toClassDetailsString());
+		
+		System.out.println("TP:" +eval.numTruePositives(0)+" FP:" +eval.numFalsePositives(0)
+				+" TN:" +eval.numTrueNegatives(0)+" FN:"+eval.numFalseNegatives(0));
+		System.out.println("Accuracy = " +eval.pctCorrect());
+		System.out.println("F1 = " +eval.fMeasure(0));
+		System.out.println("Precision = " +eval.precision(0));
+		System.out.println("Recall = " +eval.recall(0));
+		
+		int classid = trainset.classAttribute().indexOfValue("EPC");
+		return new ClassificationResults((int)eval.numTruePositives(classid)
+				,(int)eval.numFalsePositives(classid)
+				,(int)eval.numTrueNegatives(classid)
+				,(int)eval.numFalseNegatives(classid), classifier); 
 	}
 	
 	public static void main(String[] args) throws Exception {

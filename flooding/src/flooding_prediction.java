@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
-
-import weka.classifiers.Classifier;
 
 public class flooding_prediction {
 	static public Calendar Base_Date = new GregorianCalendar(1980, 0, 1); // first date's ID starts with 0
@@ -324,6 +321,262 @@ public class flooding_prediction {
 			return RunWeka.runFolds(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,trainFile);
 		} else {
 			return RunWeka.run(RunWeka.getBaseClassifier(baseclassifier),null,trainFile, testFile);
+		}
+	}
+	
+	/**
+	 * Store all raw data in memory to avoid disk I/O during experimenting
+	 * The memory consumption is ~2gb
+	 * run it in 64 bit mode and increase JVM heap size to satisfy it
+	 * works for me with Java 64 bit in win7 64 bit
+	 */
+	public static double[] IowaPWs = null;	// Precipitated Water
+	public static double[][][] data = null;	// all data
+	
+	public static double percentile_step = 0.05;	// an value in (0, 1]
+	public static double[] percentilesIowa = null;	// Iowa precipitated water percentiles
+	public static double[][] percentiles0 = null;	// individual
+	public static double[] percentiles1 = null;	// Iowa 2 locations
+	public static double[] percentiles2 = null;	// all locations
+	
+	static private void readData() throws NumberFormatException, IOException {
+		String delimit = "\\s+";
+		
+		// load Iowa Precipitated water data
+		if (IowaPWs == null) IowaPWs = new double[totalDays];
+    	BufferedReader reader = new BufferedReader(new FileReader(IowaPrecipFile));
+		String line="";
+		int day=0, i=0;
+		while ((line = reader.readLine()) != null) {
+			if ( (day >= Data_start_day) && (day <= Data_end_day)) {
+				String[] values = line.split(delimit);
+				IowaPWs[i++] = Double.parseDouble(values[1]);	//skip values[0] which is empty
+			}
+			day++;
+		}
+		reader.close();
+
+		/** load percentiles data for Iowa precipitated water, Iowa precipitable water (2 locations), all precipitable water
+		 *  when can not read from file, calculate it from raw PW data and create the file
+		 */
+		readPercentiles();
+		// load percentiles data for precipitable water per location
+		readIndividualPercentiles();
+		
+		// load raw data
+		String featureFiles[] = DataLoader.featureFiles;
+		if (data == null) data = new double[featureFiles.length][][];
+		for (int f=0;f<featureFiles.length;f++) {
+			data[f] = DataLoader.loadingData(featureFiles[f], delimit, totalSampleLocations, (int)Data_start_day, (int)Data_end_day);
+		}
+
+	}
+	
+	static private void readIndividualPercentiles() throws NumberFormatException, IOException {
+		if (percentiles0 != null) return;
+		String delimit = "\\s+";
+		String featureFiles[] = DataLoader.featureFiles;
+		double[][] pwData = DataLoader.loadingData(featureFiles[DataLoader.PW], delimit, totalSampleLocations, (int)Data_start_day, (int)Data_end_day);
+		if (percentile_step > 1.0) percentile_step = 1.0;
+		if (percentile_step <= 0.0) percentile_step = 0.01;
+		int pNo = (int)(1.0/percentile_step)+1;
+		String percentileFile0 = "./data/text/percentile0_"+String.format("%.2f", percentile_step)+".txt";
+		percentiles0 = DataLoader.readIndividualPercentiles(percentileFile0, totalSampleLocations, pNo);
+		if (percentiles0 == null) {
+			percentiles0 = new double[totalSampleLocations][];
+			for (int i=0;i<totalSampleLocations;i++)
+				percentiles0[i] = StdStats.percentilesInLine(pwData[i], percentile_step);
+			DataLoader.writeIndividualPercentiles(percentileFile0, percentiles0);
+		}
+	}
+	
+	static private void readPercentiles() throws NumberFormatException, IOException {
+		if (percentiles1 != null && percentiles2 != null)
+			return;
+		if (percentile_step > 1.0) percentile_step = 1.0;
+		if (percentile_step <= 0.0) percentile_step = 0.01;
+		int pNo = (int)(1.0/percentile_step)+1;
+		String percentileFileIowa = "./data/text/percentileIowa_"+String.format("%.2f", percentile_step)+".txt";
+		percentilesIowa = DataLoader.readPercentiles(percentileFileIowa, pNo);
+		if (percentilesIowa == null) {
+			percentilesIowa = StdStats.percentiles(IowaPWs, percentile_step);
+			DataLoader.writePercentiles(percentileFileIowa, percentilesIowa);
+		}
+		
+		String percentileFile1 = "./data/text/percentile1_"+String.format("%.2f", percentile_step)+".txt";
+		String percentileFile2 = "./data/text/percentile2_"+String.format("%.2f", percentile_step)+".txt";
+
+		percentiles1 = DataLoader.readPercentiles(percentileFile1, pNo);
+		percentiles2 = DataLoader.readPercentiles(percentileFile2, pNo);
+		if (percentiles1 != null && percentiles2 != null)
+			return;
+		
+		String delimit = "\\s+";
+		String featureFiles[] = DataLoader.featureFiles;
+		double[] pwData = new double[totalSampleLocations*totalDays];
+		BufferedReader reader = new BufferedReader(new FileReader(featureFiles[DataLoader.PW]));
+		String line="";
+		int day=0, i=0;
+		while ((line = reader.readLine()) != null) {
+			if ( (day >= Data_start_day) && (day <= Data_end_day)) {
+				String[] values = line.split(delimit);
+				for (int j=0;j<totalSampleLocations;j++)
+					pwData[i++] = Double.parseDouble(values[j+1]);	//skip values[0] which is empty
+			}
+			day++;
+		}
+		reader.close();
+		
+		if (percentiles1 == null) {
+			double[] pwIowa = new double[2*totalDays];
+			int[] IowaIds = {3941, 3978};
+			for (i=0;i<totalDays;i++)
+				for (int j=0;j<2;j++)
+					pwIowa[j+i*2] = pwData[i*totalSampleLocations+(IowaIds[j])];
+
+			percentiles1 = StdStats.percentilesInLine(pwIowa, percentile_step);
+			DataLoader.writePercentiles(percentileFile1, percentiles1);
+		}
+		if (percentiles2 == null) {
+			percentiles2 = StdStats.percentilesInLine(pwData, percentile_step);
+			DataLoader.writePercentiles(percentileFile2, percentiles2);
+		}
+	}
+	
+	public static ArrayList<PWLocation> getLoclist(ArrayList<PWC> AllEPCs, int back,int backdays) throws IOException {
+		ArrayList<PWLocation> loclist = new ArrayList<PWLocation>();
+		int lowpIndex = (int)(lowPercentile/percentile_step);
+		int pcpIndex = (int)(PCPercentile/percentile_step);
+		int epcpIndex = (int)(EPCPercentile/percentile_step);
+		double lowp=4.85, pcp=19.87, epcp=43.27;	// default value is overwritten later
+		if (PercentileUsed == 1) {
+			lowp = percentiles1[lowpIndex];
+			pcp = percentiles1[pcpIndex];
+			epcp = percentiles1[epcpIndex];
+		} else if (PercentileUsed == 2) {
+			lowp = percentiles2[lowpIndex];
+			pcp = percentiles2[pcpIndex];
+			epcp = percentiles2[epcpIndex];
+		}
+		for (int loc=0;loc<flooding_prediction.totalSampleLocations;loc++) {
+			if (PercentileUsed == 0) {
+				lowp = percentiles0[loc][lowpIndex];
+				pcp = percentiles0[loc][pcpIndex];
+				epcp = percentiles0[loc][epcpIndex];
+			}
+			ArrayList<PWC> PWEPClist = PWC.FindPWCs(flooding_prediction.Start_Date,data[DataLoader.PW][loc]
+					,lowp,pcp,maxNonePCDays,minPCDays); 
+			PWEPClist = PWC.PWCRangeByAverage(PWEPClist, epcp, Double.MAX_VALUE,"EPC");
+			PWC.SortPWCbyStartDate(PWEPClist);
+			//System.out.println(loc+":="+PWEPClist.size());
+			PWLocation plc = PWLocation.findLocSupport(loc,flooding_prediction.totalDays, backdays, back,AllEPCs,PWEPClist);
+			loclist.add(plc);
+		}
+		PWLocation.SortLocbySupport(loclist);
+		return loclist;
+	}
+	
+	public static ClassificationResults runInMemory() throws Exception {
+		if (IowaPWs == null || data == null)
+			readData();
+
+		double low = percentilesIowa[(int)(lowPercentile/percentile_step)];
+		double PCThreshold = percentilesIowa[(int)(PCPercentile/percentile_step)];
+		double EPCThreshold = percentilesIowa[(int)(EPCPercentile/percentile_step)];
+		double PCUPBOUND = percentilesIowa[(int)(PCUpBound/percentile_step)];
+		double PCLOWBOUND = percentilesIowa[(int)(PCLowBound/percentile_step)];
+		System.out.println("low:"+low);
+		System.out.println("PCThreshold:"+PCThreshold);
+		System.out.println("EPCThreshold:"+EPCThreshold);
+		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+		System.out.println("pwclist.size:"+pwclist.size());
+
+		// looking for the EPCs of Iowa
+		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
+		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
+		testEPCs = PWC.PWCRangeByMonth(testEPCs, start_month, end_month);
+		ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
+		trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
+		//PWC.StorePCData(trainEPCs,IowaEPCFile);
+
+		
+		ArrayList<PWC> AllPCs = null;
+		// looking for the PCs of Iowa
+		if (RandomselectPC) {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
+		}
+		else {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
+		}
+		ArrayList<PWC> TestPCs = PWC.PWCRangeByYear(AllPCs, testData_start_year, testData_end_year);
+		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
+		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
+		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
+		if (RandomselectPC) {
+			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
+			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
+		}
+		//PWC.StorePCData(TrainPCs,IowaPCFile);
+		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
+		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
+		// combine PC and EPC into one list
+		for (PWC epc:trainEPCs) {
+			TrainPCs.add(epc);
+		}
+		for (PWC epc:testEPCs) {
+			TestPCs.add(epc);
+		}
+
+		PWC.SortPWCbyStartDate(TrainPCs);
+		PWC.SortPWCbyStartDate(TestPCs);
+		PWC.SortPWCbyStartDate(AllEPCs);
+
+		int back =5, backdays=6;
+		// remove the PCs' which fall out of the range
+		while (TrainPCs.get(0).start_date <=(backdays+back)) {
+			TrainPCs.remove(0);
+		}
+		while (AllEPCs.get(0).start_date <=(backdays+back)) {
+			AllEPCs.remove(0);
+		}
+
+		// get the location support and confidence data
+		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
+		// filter out the locations by support range
+		int index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+		support_start =loclist.get(index).support;
+		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
+		if (index<=0){ // use threshold
+			support_end = PWLocation.MaxSupport(loclist)+1;
+		} else { // use range
+			support_end =loclist.get(index).support;
+		}
+		ArrayList<PWLocation> locs= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
+		// filter out the locations by confidence range
+		locs=PWLocation.LOCRangeByConfidence(locs,confidence_start,confidence_end);
+		// store the filtered location result into file 
+		//PWLocation.StoreLocData(locs, idUsed2);
+
+		int[] ids = new int[locs.size()];
+		for (int i=0;i<ids.length;i++) ids[i] = locs.get(i).ID;
+
+		// creat weka file using loc ArrayList
+		/*
+			String features[] = DataLoader.features;
+	    	String featureFiles[] = DataLoader.featureFiles;
+			String delimit2 = "\\s+";
+			String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
+			String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
+
+			System.out.println("Creating training set~");
+			PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, locs,trainFile);
+			System.out.println("Creating test set~");
+			PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locs, testFile);
+		 */
+		if (crossValFolds >1) {
+			return RunWeka.runFoldsInMemory(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,data,TrainPCs,ids,backdays,back);
+		} else {
+			return RunWeka.runInMemory(RunWeka.getBaseClassifier(baseclassifier),null,data,TrainPCs,TestPCs,ids,backdays,back);
 		}
 	}
 	

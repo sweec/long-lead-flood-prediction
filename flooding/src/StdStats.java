@@ -390,6 +390,80 @@ public final class StdStats {
 
     
     /**
+     * Return the percentile values in an array.
+     * if step>=1.0, return the smallest and largest
+     * if step<=0.0, reset to 0.01, return 101 values
+     */
+    public static double[] percentiles(double[] a, double step) {
+    	if (step > 1.0 ) {step=1.0;}
+    	if (step <= 0.0 ) {step=0.01;}
+    	
+    	double[] b = new double[a.length];
+    	for (int i=0;i<a.length;i++){
+    		b[i]=a[i];
+    	}
+    	Arrays.sort(b);
+    	int pNo = (int)(1.0/step)+1;
+    	double[] p = new double[pNo];
+    	for (int i=0;i<pNo;i++) {
+    		int n = (int) ((double)(b.length*i) * (step));
+        	if (n < 1 ) {n=1;}
+        	p[i] = b[n-1];
+    	}
+    	return p;
+    }
+    
+    /**
+     * Return the percentile values in an array.
+     * if step>=1.0, return the smallest and largest
+     * if step<=0.0, reset to 0.01, return 101 values
+     */
+    public static double[] percentilesInLine(double[] a, double step) {
+    	if (step > 1.0 ) {step=1.0;}
+    	if (step <= 0.0 ) {step=0.01;}
+    	double[] b=a;
+    	Arrays.sort(b);
+    	int pNo = (int)(1.0/step)+1;
+    	double[] p = new double[pNo];
+    	for (int i=0;i<pNo;i++) {
+    		int n = (int) ((double)(b.length*i) * (step));
+        	if (n < 1 ) {n=1;}
+        	p[i] = b[n-1];
+    	}
+    	return p;
+    }
+    
+    /**
+     * Return the percentile values in a 2d array.
+     * if step>=1.0, return the smallest and largest
+     * if step<=0.0, reset to 0.01, return 101 values
+     */
+    public static double[] percentiles(double[][] a2D, double step) {
+    	if (step > 1.0 ) {step=1.0;}
+    	if (step <= 0.0 ) {step=0.01;}
+    	double[] a = new double[a2D.length*a2D[0].length];
+    	for (int i=0;i<a2D.length;i++){
+    	 	for (int j=0;j<a2D[0].length;j++){
+        		a[i*a2D[0].length+j]=a2D[i][j];
+        	}
+       
+    	}
+    	double[] b = new double[a.length];
+    	for (int i=0;i<a.length;i++){
+    		b[i]=a[i];
+    	}
+    	Arrays.sort(b);
+    	int pNo = (int)(1.0/step)+1;
+    	double[] p = new double[pNo];
+    	for (int i=0;i<pNo;i++) {
+    		int n = (int) ((double)(b.length*i) * (step));
+        	if (n < 1 ) {n=1;}
+        	p[i] = b[n-1];
+    	}
+    	return p;
+    }
+    
+    /**
      * Return sum of all values in array.
      */
     public static int sum(int[] a) {
