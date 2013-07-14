@@ -294,7 +294,7 @@ public class flooding_prediction {
 		support_start =loclist.get(index).support;
 		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
 		if (index<=0){ // use threshold
-			support_end = PWLocation.MaxSupport(loclist)+1;
+			support_end = 9999999;
 		} else { // use range
 			support_end =loclist.get(index).support;
 		}
@@ -547,7 +547,7 @@ public class flooding_prediction {
 		support_start =loclist.get(index).support;
 		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
 		if (index<=0){ // use threshold
-			support_end = PWLocation.MaxSupport(loclist)+1;
+			support_end = 9999999;
 		} else { // use range
 			support_end =loclist.get(index).support;
 		}
