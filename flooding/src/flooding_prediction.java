@@ -114,18 +114,25 @@ public class flooding_prediction {
 		return null;
 	}
 
+	@SuppressWarnings("rawtypes")
 	public static <T> void callfunc(BufferedWriter outresult, Callable<T> func) throws Exception {
-		ClassificationResults result = null;
+		ArrayList<ClassificationResults> result = new ArrayList<ClassificationResults>();
 		if (func == null) {
-			 result = run();
+			 result.add(run());
 		} else {
 			Object ret = func.call();
 			if (ret instanceof ClassificationResults)
-				result = (ClassificationResults) ret;
+				result.add((ClassificationResults) ret);
+			else if (ret instanceof ArrayList) {
+				for (Object r:(ArrayList)ret) {
+					if (r instanceof ClassificationResults)
+						result.add((ClassificationResults) r);
+				}
+			}
 		}
-		if (result != null) {
-			result.printout();
-			outresult.write(result.one_record());
+		for (ClassificationResults r:result) {
+			r.printout();
+			outresult.write(r.one_record());
 			outresult.flush();
 		}
 	}
@@ -457,7 +464,7 @@ public class flooding_prediction {
 		return loclist;
 	}
 	
-	public static ClassificationResults runInMemory() throws Exception {
+	public static ArrayList<ClassificationResults> runInMemory() throws Exception {
 		if (IowaPWs == null || data == null)
 			readData();
 
@@ -523,76 +530,91 @@ public class flooding_prediction {
 
 		// get the location support and confidence data
 		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
-		// filter out the locations by support range
-		int index = (int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
-		support_start =loclist.get(index).support;
-		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
-		if (index<=0){ // use threshold
-			support_end = 9999999;
-		} else { // use range
-			support_end =loclist.get(index).support;
-		}
-		ArrayList<PWLocation> locs= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
-		// filter out the locations by confidence range
-		locs=PWLocation.LOCRangeByConfidence(locs,confidence_start,confidence_end);
-		// too many locs will end with outofmemory error, so put a check here
-		int maxLocsnumber = 500;
-		if (locs.size()>maxLocsnumber) return null;
-		System.out.println("Locations used: "+locs.size());
-		// store the filtered location result into file 
-		//PWLocation.StoreLocData(locs, idUsed2);
-
-		int[] ids = new int[locs.size()];
-		for (int i=0;i<ids.length;i++) ids[i] = locs.get(i).ID;
-
-		// creat weka file using loc ArrayList
-		/*
-			String features[] = DataLoader.features;
-	    	String featureFiles[] = DataLoader.featureFiles;
-			String delimit2 = "\\s+";
-			String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
-			String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
-
-			System.out.println("Creating training set~");
-			PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, locs,trainFile);
-			System.out.println("Creating test set~");
-			PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locs, testFile);
+		
+		/** 
+		 * for any set of parameters, always test with all combinations of support and confidence, 
+		 * those are valid if the number of resulting locs filtered falls in [1,500] 
 		 */
-		if (crossValFolds >1) {
-			return RunWeka.runFoldsInMemory(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,data,TrainPCs,ids,backdays,back);
-		} else {
-			return RunWeka.runInMemory(RunWeka.getBaseClassifier(baseclassifier),null,data,TrainPCs,TestPCs,ids,backdays,back);
+		ArrayList<ClassificationResults> result = new ArrayList<ClassificationResults>();
+		// filter out the locations by support range
+		double support_percentile_step = 0.05;
+		int prev_support_start = -1;
+		for (support_percentile_start=0;support_percentile_start<1;support_percentile_start+=support_percentile_step) {
+			int index = (int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+			support_start =loclist.get(index).support;
+			// skip already tested support_start
+			if (prev_support_start==support_start)
+				continue;
+			else
+				prev_support_start=support_start;
+			index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
+			if (index<=0){ // use threshold
+				support_end = 9999999;
+			} else { // use range
+				support_end =loclist.get(index).support;
+			}
+			ArrayList<PWLocation> locsbysupport= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
+			
+			// filter out the locations by confidence range
+			double confidence_step = 0.05;
+			int prev_locs_number = -1;
+			for (confidence_start=0;confidence_start<1;confidence_start+=confidence_step) {
+				ArrayList<PWLocation> locs=PWLocation.LOCRangeByConfidence(locsbysupport,confidence_start,confidence_end);
+				int locs_number = locs.size();
+				// skip already tested locs_number
+				if (prev_locs_number == locs_number)
+					continue;
+				else
+					prev_locs_number = locs_number;
+				// filter out invalid locs number, too many will cause out of memory error later
+				int min_locs_number = 1, max_Locs_number = 500;
+				if (locs_number<min_locs_number || locs_number>max_Locs_number)
+					continue;
+				System.out.println("Locations used: "+locs_number);
+				// store the filtered location result into file 
+				//PWLocation.StoreLocData(locs, idUsed2);
+
+				int[] ids = new int[locs_number];
+				for (int i=0;i<locs_number;i++) ids[i] = locs.get(i).ID;
+
+				// creat weka file using loc ArrayList
+				/*
+				String features[] = DataLoader.features;
+				String featureFiles[] = DataLoader.featureFiles;
+				String delimit2 = "\\s+";
+				String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
+				String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
+
+				System.out.println("Creating training set~");
+				PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, locs,trainFile);
+				System.out.println("Creating test set~");
+				PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locs, testFile);
+				*/ 
+				if (crossValFolds >1) {
+					result.add(RunWeka.runFoldsInMemory(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,data,TrainPCs,ids,backdays,back));
+				} else {
+					result.add(RunWeka.runInMemory(RunWeka.getBaseClassifier(baseclassifier),null,data,TrainPCs,TestPCs,ids,backdays,back));
+				}
+			}
 		}
+		return result;
 	}
 	
 	public static void testPercentileUsed2() throws Exception {
 		PercentileUsed = 2;
-		/**support_percentile_start = 0.95;
-		 * minPCDays and maxNonePCDays are determined with support_percentile_start = 0.95
-		 */
-		/* minPCDays = 8 give best accuracy 67% in range [5, 15]
-		Run_minPCDays(5, 15, true, new Callable<ClassificationResults>() {
-			   public ClassificationResults call() throws Exception {
+		// minPCDays = 8 give best accuracy 67% in range [5, 15]
+		Run_minPCDays(5, 15, true, new Callable<ArrayList<ClassificationResults>>() {
+			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-			       */
-		minPCDays = 8;
+			       
+		//minPCDays = 8;
 		/* maxNonePCDays = 2 give best accuracy 67% in range [1, 3]
-		Run_maxNonePCDays(1, 3, true, new Callable<ClassificationResults>() {
-			   public ClassificationResults call() throws Exception {
+		Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
 			       */
-		maxNonePCDays = 2;
+		//maxNonePCDays = 2;
 		
-		/**
-		 * now determine best combination of support and confidence threshold
-		 */
-		Run_supportThreshold(0, supportthresholds.length-1, true, new Callable<Void>() {
-			   public Void call() throws Exception {
-				   return Run_confThreshold(0, confidencethresholds.length-1, true, new Callable<ClassificationResults>() {
-					   public ClassificationResults call() throws Exception {
-						   return runInMemory();
-					   }});
-			   }});
 	}
 	
 	public static void main(String[] args) throws Exception {
