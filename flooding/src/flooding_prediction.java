@@ -41,28 +41,21 @@ public class flooding_prediction {
 
 	private static String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
 	
-	public static Void Run_maxNonePCDays(int start, int end, boolean append, Callable<Void> func) throws Exception {
+	public static <T> Void Run_maxNonePCDays(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
 		if (! append){
 			ClassificationResults.writetitle(outresult);
 		}
 		for (int days=start;days <= end;days++) {
 			maxNonePCDays = days;//
-			if (func == null) {
-				 ClassificationResults result = run();
-				 result.printout();
-				 outresult.write(result.one_record());
-				 outresult.flush();
-			} else {
-				func.call();
-			}			
+			callfunc(outresult, func);
 		}
 		outresult.close();
 		
 		return null;
 	}
 	
-	public static Void Run_supportRange(int start, int end, boolean append, Callable<Void> func) throws Exception {
+	public static <T> Void Run_supportRange(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
 		if (! append){
 			ClassificationResults.writetitle(outresult);
@@ -70,21 +63,14 @@ public class flooding_prediction {
 		for (int s=start;s <= end;s++) {
 			support_percentile_start = supportranges[s];
 			support_percentile_end = supportranges[s+1];
-			if (func == null) {
-				 ClassificationResults result = run();
-				 result.printout();
-				 outresult.write(result.one_record());
-				 outresult.flush();
-			} else {
-				func.call();
-			}			
+			callfunc(outresult, func);
 		}
 		outresult.close();
 		
 		return null;
 	}
 	
-	public static Void Run_supportThreshold(int start, int end, boolean append, Callable<Void> func) throws Exception {
+	public static <T> Void Run_supportThreshold(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
 		if (! append){
 			ClassificationResults.writetitle(outresult);
@@ -92,21 +78,14 @@ public class flooding_prediction {
 		for (int s=start;s <= end;s++) {
 			support_percentile_start = supportthresholds[s];
 			support_end = Integer.MAX_VALUE;
-			if (func == null) {
-				 ClassificationResults result = run();
-				 result.printout();
-				 outresult.write(result.one_record());
-				 outresult.flush();
-			} else {
-				func.call();
-			}			
+			callfunc(outresult, func);
 		}
 		outresult.close();
 		
 		return null;
 	}
 	
-	public static Void Run_confThreshold(int start, int end, boolean append, Callable<Void> func) throws Exception {
+	public static <T> Void Run_confThreshold(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
 		if (! append){
 			ClassificationResults.writetitle(outresult);
@@ -114,41 +93,43 @@ public class flooding_prediction {
 		for (int s=start;s <= end;s++) {
 			confidence_start = confidencethresholds[s];
 			confidence_end = Double.POSITIVE_INFINITY;
-			if (func == null) {
-				 ClassificationResults result = run();
-				 result.printout();
-				 outresult.write(result.one_record());
-				 outresult.flush();
-			} else {
-				func.call();
-			}			
+			callfunc(outresult, func);
 		}
 		outresult.close();
 		
 		return null;
 	}
 	
-	public static Void Run_minPCDays(int start, int end, boolean append, Callable<Void> func) throws Exception {
+	public static <T> Void Run_minPCDays(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
 		if (! append){
 			ClassificationResults.writetitle(outresult);
 		}
 		for (int days=start;days <= end;days++) {
 			minPCDays = days;//
-			if (func == null) {
-				 ClassificationResults result = run();
-				 result.printout();
-				 outresult.write(result.one_record());
-				 outresult.flush();
-			} else {
-				func.call();
-			}			
+			callfunc(outresult, func);
 		}
 		outresult.close();
 		
 		return null;
 	}
-	  
+
+	public static <T> void callfunc(BufferedWriter outresult, Callable<T> func) throws Exception {
+		ClassificationResults result = null;
+		if (func == null) {
+			 result = run();
+		} else {
+			Object ret = func.call();
+			if (ret instanceof ClassificationResults)
+				result = (ClassificationResults) ret;
+		}
+		if (result != null) {
+			result.printout();
+			outresult.write(result.one_record());
+			outresult.flush();
+		}
+	}
+	
 	public static ClassificationResults run() throws Exception {
 		String delimit = "\\s+";
     	double[] IowaPWs = new double[totalDays];
@@ -543,7 +524,7 @@ public class flooding_prediction {
 		// get the location support and confidence data
 		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
 		// filter out the locations by support range
-		int index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+		int index = (int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
 		support_start =loclist.get(index).support;
 		index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
 		if (index<=0){ // use threshold
@@ -554,6 +535,10 @@ public class flooding_prediction {
 		ArrayList<PWLocation> locs= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
 		// filter out the locations by confidence range
 		locs=PWLocation.LOCRangeByConfidence(locs,confidence_start,confidence_end);
+		// too many locs will end with outofmemory error, so put a check here
+		int maxLocsnumber = 500;
+		if (locs.size()>maxLocsnumber) return null;
+		System.out.println("Locations used: "+locs.size());
 		// store the filtered location result into file 
 		//PWLocation.StoreLocData(locs, idUsed2);
 
@@ -580,8 +565,39 @@ public class flooding_prediction {
 		}
 	}
 	
+	public static void testPercentileUsed2() throws Exception {
+		PercentileUsed = 2;
+		/**support_percentile_start = 0.95;
+		 * minPCDays and maxNonePCDays are determined with support_percentile_start = 0.95
+		 */
+		/* minPCDays = 8 give best accuracy 67% in range [5, 15]
+		Run_minPCDays(5, 15, true, new Callable<ClassificationResults>() {
+			   public ClassificationResults call() throws Exception {
+			       return runInMemory(); }});
+			       */
+		minPCDays = 8;
+		/* maxNonePCDays = 2 give best accuracy 67% in range [1, 3]
+		Run_maxNonePCDays(1, 3, true, new Callable<ClassificationResults>() {
+			   public ClassificationResults call() throws Exception {
+			       return runInMemory(); }});
+			       */
+		maxNonePCDays = 2;
+		
+		/**
+		 * now determine best combination of support and confidence threshold
+		 */
+		Run_supportThreshold(0, supportthresholds.length-1, true, new Callable<Void>() {
+			   public Void call() throws Exception {
+				   return Run_confThreshold(0, confidencethresholds.length-1, true, new Callable<ClassificationResults>() {
+					   public ClassificationResults call() throws Exception {
+						   return runInMemory();
+					   }});
+			   }});
+	}
+	
 	public static void main(String[] args) throws Exception {
-		runInMemory();
+		testPercentileUsed2();
+		//runInMemory();
 		/*
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],false));
 		ClassificationResults.writetitle(outresult);
