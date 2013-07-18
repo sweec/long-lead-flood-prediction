@@ -52,15 +52,15 @@ public class RunWeka {
 		return new ClassificationResults((int)eval.numTruePositives(classid)
 				,(int)eval.numFalsePositives(classid)
 				,(int)eval.numTrueNegatives(classid)
-				,(int)eval.numFalseNegatives(classid), classifier); 
+				,(int)eval.numFalseNegatives(classid), classifier, trainset.numInstances(), trainset.numAttributes()/54); 
 	}
 	
 	public static ClassificationResults runFolds(Classifier classifier, String[] options, int folds, String trainfilepath) throws Exception {
 		Instances trainset = new Instances(new BufferedReader(new FileReader(trainfilepath)));
-		int numoftest = trainset.numInstances();
+		int numoftrain = trainset.numInstances();
 		trainset.setClassIndex(trainset.attribute("class").index());
-		double[] truth = new double[numoftest];
-		for (int i=0;i<numoftest;i++) {
+		double[] truth = new double[numoftrain];
+		for (int i=0;i<numoftrain;i++) {
 			truth[i]=trainset.instance(i).classValue();
 		}
 		
@@ -84,7 +84,7 @@ public class RunWeka {
 		return new ClassificationResults((int)eval.numTruePositives(classid)
 				,(int)eval.numFalsePositives(classid)
 				,(int)eval.numTrueNegatives(classid)
-				,(int)eval.numFalseNegatives(classid), classifier); 
+				,(int)eval.numFalseNegatives(classid), classifier, numoftrain, trainset.numAttributes()/54); 
 	}
 	
 	public static void runSingleDay(int from_day, int end_day, String trainfilepath,String testfilepath) throws Exception{
@@ -213,7 +213,7 @@ public class RunWeka {
 		return new ClassificationResults((int)eval.numTruePositives(classid)
 				,(int)eval.numFalsePositives(classid)
 				,(int)eval.numTrueNegatives(classid)
-				,(int)eval.numFalseNegatives(classid), classifier); 
+				,(int)eval.numFalseNegatives(classid), classifier, numoftrain, locs.length); 
 	}
 	
 	public static ClassificationResults runFoldsInMemory(Classifier classifier, String[] options, int folds, double[][][] data, ArrayList<PWC> TrainPCs
@@ -278,7 +278,7 @@ public class RunWeka {
 		return new ClassificationResults((int)eval.numTruePositives(classid)
 				,(int)eval.numFalsePositives(classid)
 				,(int)eval.numTrueNegatives(classid)
-				,(int)eval.numFalseNegatives(classid), classifier); 
+				,(int)eval.numFalseNegatives(classid), classifier, numoftrain, locs.length); 
 	}
 	
 	public static void main(String[] args) throws Exception {

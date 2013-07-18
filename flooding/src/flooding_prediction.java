@@ -602,17 +602,23 @@ public class flooding_prediction {
 	
 	public static void testPercentileUsed2() throws Exception {
 		PercentileUsed = 2;
-		// minPCDays = 8 give best accuracy 67% in range [5, 15]
+		// minPCDays = 11 give 77%, = 13 give 82%
+		/*
 		Run_minPCDays(5, 15, true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-			       
-		//minPCDays = 8;
+		*/	       
+		Run_minPCDays(5, 15, true, new Callable<Void>() {
+			   public Void call() throws Exception {
+			       return Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+					   public ArrayList<ClassificationResults> call() throws Exception {
+					       return runInMemory(); }}); }});
+		//minPCDays = 11;
 		/* maxNonePCDays = 2 give best accuracy 67% in range [1, 3]
 		Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-			       */
+		*/	       
 		//maxNonePCDays = 2;
 		
 	}
