@@ -17,7 +17,7 @@ public class ClassificationResults {
 	
 	public static void writetitle(BufferedWriter outresult) throws Exception{
 		outresult.write("maxNonePCDays,minPCDays,lowPercentile,PCPercentile,EPCPercentile,PCLowBound,PCUpBound" +
-				",Accuracy,F1,Precision,Recall,PercentileUsed, support_start, support_end" +
+				",Accuracy,F1,Precision,Recall,PercentileUsed,support_start,support_end" +
 				",Confidence_start,Confidence_end,start_month,end_month,instance_number,location_number,classifier");
 	}
 	
