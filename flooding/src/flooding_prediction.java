@@ -261,7 +261,7 @@ public class flooding_prediction {
 		while (AllEPCs.get(0).start_date <=(backdays+back)) {
 			AllEPCs.remove(0);
 		}
-/*
+
 		// find location support and confidence based on the selection of PercentileUsed and then save to a file
 		if (PercentileUsed==0) { //0: Individuals  1: Iowa  2: All locations
 			PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays);
@@ -286,7 +286,7 @@ public class flooding_prediction {
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20p,PW60p,PW90p);
 			}
 		}
-*/		
+		
 		
 		// load the location support and confidence data from selected file
 		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
