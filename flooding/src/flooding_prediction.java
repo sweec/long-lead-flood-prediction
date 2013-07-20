@@ -39,7 +39,7 @@ public class flooding_prediction {
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
 	static public int crossValFolds =5;
 
-	private static String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
+	static public  String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
 	
 	public static <T> Void Run_maxNonePCDays(int start, int end, boolean append, Callable<T> func) throws Exception {
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
