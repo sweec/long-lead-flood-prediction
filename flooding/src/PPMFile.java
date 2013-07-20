@@ -10,7 +10,7 @@ import javax.media.jai.*;
 
 public class PPMFile {
 
-    private byte bytes[][]=null;      // bytes which make up binary PPM image
+    private char bytes[][]=null;      // bytes which make up binary PPM image
     private String filename=null;     // filename for PPM image
 
 
@@ -20,12 +20,12 @@ public class PPMFile {
     }
 
 
-    public PPMFile(byte bytes[][]) {
+    public PPMFile(char bytes[][]) {
 	this.bytes = bytes;
     }
 
 
-    public byte[][] GetBytes() {
+    public char[][] GetBytes() {
 	return bytes;
     }
 
@@ -42,7 +42,7 @@ public class PPMFile {
     		
     		for (int y = 0; y < bytes.length; y++) {
     		    for (int x=0; x < bytes[0].length; x++) {
-    		    	fos.write((byte)bytes[y][x]);
+    		    	fos.write((char)bytes[y][x]);
     		    }
     		}
     		fos.close();
@@ -72,7 +72,7 @@ public class PPMFile {
 		
 		for (int y = 0; y < bytes.length; y++) {
 		    for (int x=0; x < bytes[0].length; x++) {
-		    	fos.write((byte)bytes[y][x]);
+		    	fos.write((char)bytes[y][x]);
 		    }
 		}
 		fos.close();
@@ -134,11 +134,11 @@ public class PPMFile {
 		
 		// remainder of file is width*height*3 bytes (red/green/blue triples)
 
-		bytes = new byte[height][width*3];
+		bytes = new char[height][width*3];
 		
 		for (int y=0; y < height; y++) {
 			for (int x=0; x<width*3;x++){
-				bytes[y][x] = (byte) isr.read();
+				bytes[y][x] = (char) isr.read();
 			}
 		}
 		
