@@ -114,6 +114,20 @@ public class flooding_prediction {
 		return null;
 	}
 
+	public static <T> Void Run_EPCPercentile(boolean append, Callable<T> func) throws Exception {
+		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],append));
+		if (! append){
+			ClassificationResults.writetitle(outresult);
+		}
+		for (EPCPercentile=0.85;EPCPercentile < 1;EPCPercentile += 0.05) {
+			PCUpBound = EPCPercentile;
+			callfunc(outresult, func);
+		}
+		outresult.close();
+		
+		return null;
+	}
+
 	@SuppressWarnings("rawtypes")
 	public static <T> void callfunc(BufferedWriter outresult, Callable<T> func) throws Exception {
 		ArrayList<ClassificationResults> result = new ArrayList<ClassificationResults>();
@@ -528,6 +542,10 @@ public class flooding_prediction {
 			AllEPCs.remove(0);
 		}
 
+		// skip the one with too few instances that weka can't do cross-validation
+		if (TrainPCs.size()<crossValFolds)
+			return null;
+		
 		// get the location support and confidence data
 		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
 		
@@ -554,7 +572,8 @@ public class flooding_prediction {
 				support_end =loclist.get(index).support;
 			}
 			ArrayList<PWLocation> locsbysupport= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
-			
+			if (support_end == 9999999)
+				support_end = loclist.get(0).support;	// output max_support instead of 9999999
 			// filter out the locations by confidence range
 			double confidence_step = 0.05;
 			int prev_locs_number = -1;
@@ -567,7 +586,7 @@ public class flooding_prediction {
 				else
 					prev_locs_number = locs_number;
 				// filter out invalid locs number, too many will cause out of memory error later
-				int min_locs_number = 1, max_Locs_number = 500;
+				int min_locs_number = 1, max_Locs_number = 850;
 				if (locs_number<min_locs_number || locs_number>max_Locs_number)
 					continue;
 				System.out.println("Locations used: "+locs_number);
@@ -602,25 +621,25 @@ public class flooding_prediction {
 	
 	public static void testPercentileUsed2() throws Exception {
 		PercentileUsed = 2;
-		// minPCDays = 11 give 77%, = 13 give 82%
 		/*
 		Run_minPCDays(5, 15, true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-		*/	       
+		*/
+		
 		Run_minPCDays(5, 15, true, new Callable<Void>() {
 			   public Void call() throws Exception {
-			       return Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+				   return Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
 					   public ArrayList<ClassificationResults> call() throws Exception {
 					       return runInMemory(); }}); }});
-		//minPCDays = 11;
-		/* maxNonePCDays = 2 give best accuracy 67% in range [1, 3]
-		Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+					       
+		/*
+		minPCDays = 15;
+		maxNonePCDays = 1;
+		Run_EPCPercentile(true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-		*/	       
-		//maxNonePCDays = 2;
-		
+		*/
 	}
 	
 	public static void main(String[] args) throws Exception {
