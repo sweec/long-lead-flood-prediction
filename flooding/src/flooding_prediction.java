@@ -586,8 +586,8 @@ public class flooding_prediction {
 				else
 					prev_locs_number = locs_number;
 				// filter out invalid locs number, too many will cause out of memory error later
-				int min_locs_number = 1, max_Locs_number = 850;
-				if (locs_number<min_locs_number || locs_number>max_Locs_number)
+				int min_locs_number = 1, max_instance_x_Locs_number = 500000;
+				if (locs_number<min_locs_number || TrainPCs.size()*locs_number>max_instance_x_Locs_number)
 					continue;
 				System.out.println("Locations used: "+locs_number);
 				// store the filtered location result into file 
@@ -626,20 +626,18 @@ public class flooding_prediction {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
 		*/
-		
+		PCPercentile = 0.5; EPCPercentile = 0.85;
 		Run_minPCDays(5, 15, true, new Callable<Void>() {
 			   public Void call() throws Exception {
-				   return Run_maxNonePCDays(1, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+				   return Run_maxNonePCDays(2, 3, true, new Callable<ArrayList<ClassificationResults>>() {
 					   public ArrayList<ClassificationResults> call() throws Exception {
 					       return runInMemory(); }}); }});
 					       
 		/*
-		minPCDays = 15;
-		maxNonePCDays = 1;
 		Run_EPCPercentile(true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
-		*/
+			       */
 	}
 	
 	public static void main(String[] args) throws Exception {
