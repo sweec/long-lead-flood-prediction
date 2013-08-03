@@ -33,8 +33,8 @@ public class RunIndividual {
 	 * @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
-		flooding_prediction.EPCPercentile=0.85;
-		flooding_prediction.PCUpBound = 0.85;
+		flooding_prediction.EPCPercentile=0.90;
+		flooding_prediction.PCUpBound = 0.90;
 		testPercentileUsed(0);		
 		/*
 		flooding_prediction.trainData_start_year = 2001; flooding_prediction.trainData_end_year = 2009;
