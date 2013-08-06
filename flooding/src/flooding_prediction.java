@@ -4,9 +4,17 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
+
+import weka.classifiers.Classifier;
+import weka.classifiers.trees.J48;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
 
 public class flooding_prediction {
 	static public Calendar Base_Date = new GregorianCalendar(2001, 0, 1); // first date's ID starts with 0
@@ -619,25 +627,198 @@ public class flooding_prediction {
 		return result;
 	}
 	
+	private static void getLocation(int locNo) throws Exception {
+		if (IowaPWs == null || data == null)
+			readData();
+
+		double low = percentilesIowa[(int)(lowPercentile/percentile_step)];
+		double PCThreshold = percentilesIowa[(int)(PCPercentile/percentile_step)];
+		double EPCThreshold = percentilesIowa[(int)(EPCPercentile/percentile_step)];
+		double PCUPBOUND = percentilesIowa[(int)(PCUpBound/percentile_step)];
+		double PCLOWBOUND = percentilesIowa[(int)(PCLowBound/percentile_step)];
+		System.out.println("low:"+low);
+		System.out.println("PCThreshold:"+PCThreshold);
+		System.out.println("EPCThreshold:"+EPCThreshold);
+		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+		System.out.println("pwclist.size:"+pwclist.size());
+
+		// looking for the EPCs of Iowa
+		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
+		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
+		testEPCs = PWC.PWCRangeByMonth(testEPCs, start_month, end_month);
+		ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
+		trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
+		//PWC.StorePCData(trainEPCs,IowaEPCFile);
+
+		
+		ArrayList<PWC> AllPCs = null;
+		// looking for the PCs of Iowa
+		if (RandomselectPC) {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
+		}
+		else {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
+		}
+		ArrayList<PWC> TestPCs = PWC.PWCRangeByYear(AllPCs, testData_start_year, testData_end_year);
+		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
+		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
+		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
+		if (RandomselectPC) {
+			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
+			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
+		}
+		//PWC.StorePCData(TrainPCs,IowaPCFile);
+		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
+		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
+		// combine PC and EPC into one list
+		for (PWC epc:trainEPCs) {
+			TrainPCs.add(epc);
+		}
+		for (PWC epc:testEPCs) {
+			TestPCs.add(epc);
+		}
+
+		PWC.SortPWCbyStartDate(TrainPCs);
+		PWC.SortPWCbyStartDate(TestPCs);
+		PWC.SortPWCbyStartDate(AllEPCs);
+
+		int back =5, backdays=6;
+		// remove the PCs' which fall out of the range
+		while (TrainPCs.get(0).start_date <=(backdays+back)) {
+			TrainPCs.remove(0);
+		}
+		while (AllEPCs.get(0).start_date <=(backdays+back)) {
+			AllEPCs.remove(0);
+		}
+
+		// skip the one with too few instances that weka can't do cross-validation
+		if (TrainPCs.size()<crossValFolds) return;
+		
+		// get the location support and confidence data
+		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
+		// filter out the locations by support range
+		double support_percentile_step = 0.05;
+		int prev_support_start = -1;
+		for (support_percentile_start=0;support_percentile_start<1;support_percentile_start+=support_percentile_step) {
+			int index = (int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+			support_start =loclist.get(index).support;
+			// skip already tested support_start
+			if (prev_support_start==support_start)
+				continue;
+			else
+				prev_support_start=support_start;
+			index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
+			if (index<=0){ // use threshold
+				support_end = 9999999;
+			} else { // use range
+				support_end =loclist.get(index).support;
+			}
+			ArrayList<PWLocation> locsbysupport= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
+			ArrayList<PWLocation> locs=PWLocation.LOCRangeByConfidence(locsbysupport,confidence_start,confidence_end);
+			if (locNo == locs.size()) {
+				PWLocation.StoreLocData(locs, "./loc_Iowa-"+maxNonePCDays+"-"+minPCDays+".txt");
+				int[] ids = new int[locNo];
+				for (int i=0;i<locNo;i++) ids[i] = locs.get(i).ID;
+				int numofattr = data.length*locNo*backdays+1;
+				FastVector attributes = new FastVector(numofattr);
+				int attrIndex = 0;
+				for (int f=0;f<data.length;f++)
+					for (int i=0;i<locNo;i++) 
+						for (int di=0;di<backdays;di++) {
+							attributes.addElement(new Attribute(DataLoader.features[f]+"_"+ids[i]+"_"+(back+backdays-1-di), attrIndex++));
+						}
+				FastVector classValues = new FastVector(2);
+				classValues.addElement("EPC");
+				classValues.addElement("PC");
+				Attribute classAttr = new Attribute("class", classValues, attrIndex);
+				attributes.addElement(classAttr);
+				
+				int numoftrain = TrainPCs.size();
+				Instances trainset = new Instances("train_set", attributes, numoftrain);
+				for (int e=0;e<numoftrain;e++) {
+					double[] instValues = new double[numofattr];
+					int attrID = 0;
+					PWC pc = TrainPCs.get(e);
+					for (int f=0;f<data.length;f++)
+						for (int i=0;i<locNo;i++)
+							for (int di=0;di<backdays;di++) {
+								instValues[attrID++] = data[f][ids[i]][pc.start_date-back-backdays+1+di];
+							}
+					instValues[attrID] = classAttr.indexOfValue(pc.classlable);
+					double weight = 1.0;
+					Instance inst = new Instance(weight, instValues);
+					inst.setDataset(trainset);
+					trainset.add(inst);
+				}
+				
+				trainset.setClassIndex(trainset.attribute("class").index());
+				double[] truth = new double[numoftrain];
+				for (int i=0;i<numoftrain;i++) {
+					truth[i]=trainset.instance(i).classValue();
+				}
+				Classifier classifier = RunWeka.getBaseClassifier(baseclassifier);
+				classifier.buildClassifier(trainset);
+				if (classifier instanceof J48) {
+					String model = ((J48)classifier).prefix();
+					//System.out.println(model);
+					System.out.println("J48 selected locations: ");
+					String[] values = model.split("_");
+					int[] locIds = new int[values.length/2];
+					for (int i=0;i<locIds.length;i++)
+						locIds[i] = Integer.parseInt(values[1+i*2]);
+					Arrays.sort(locIds);
+					int previous = -1;
+					for (int e:locIds) {
+						if (e==previous) continue;
+						System.out.println(e);
+						previous = e;
+					}
+				} else
+					System.out.println(classifier);
+				break;
+			}
+		}
+	}
+	
 	public static void testPercentileUsed2() throws Exception {
-		PercentileUsed = 2;
+		PercentileUsed = 1;
 		/*
 		Run_minPCDays(5, 15, true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
 		*/
+		/*
 		PCPercentile = 0.5; EPCPercentile = 0.85;
-		Run_minPCDays(5, 15, true, new Callable<Void>() {
+		PCLowBound = PCPercentile; PCUpBound = EPCPercentile;
+		Run_minPCDays(10, 12, true, new Callable<Void>() {
 			   public Void call() throws Exception {
 				   return Run_maxNonePCDays(2, 3, true, new Callable<ArrayList<ClassificationResults>>() {
 					   public ArrayList<ClassificationResults> call() throws Exception {
 					       return runInMemory(); }}); }});
 					       
+		PCPercentile = 0.6; EPCPercentile = 0.9;
+		PCLowBound = PCPercentile; PCUpBound = EPCPercentile;
+		Run_minPCDays(10, 12, true, new Callable<Void>() {
+			   public Void call() throws Exception {
+				   return Run_maxNonePCDays(2, 3, true, new Callable<ArrayList<ClassificationResults>>() {
+					   public ArrayList<ClassificationResults> call() throws Exception {
+					       return runInMemory(); }}); }});
+					       */
 		/*
 		Run_EPCPercentile(true, new Callable<ArrayList<ClassificationResults>>() {
 			   public ArrayList<ClassificationResults> call() throws Exception {
 			       return runInMemory(); }});
 			       */
+		
+		PCPercentile = 0.6; EPCPercentile = 0.9;
+		PCLowBound = PCPercentile; PCUpBound = EPCPercentile;
+		maxNonePCDays = 2; minPCDays = 13; confidence_start = 0.1; confidence_end = 1;
+		getLocation(163);
+		maxNonePCDays = 2; minPCDays = 12; confidence_start = 0.05; confidence_end = 1;
+		getLocation(538);
+		maxNonePCDays = 2; minPCDays = 11; confidence_start = 0; confidence_end = 1;
+		getLocation(1867);
+		
 	}
 	
 	public static void main(String[] args) throws Exception {
