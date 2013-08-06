@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import weka.classifiers.Classifier;
@@ -779,6 +780,149 @@ public class flooding_prediction {
 			}
 		}
 	}
+
+	private static int[] getRandomLocations(int[] parentLocs, int number) {
+		if (parentLocs == null) return null;
+		int size = parentLocs.length;
+		if (number<=0 || number>size) return null;
+		int[] copyLocs = new int[size];
+		for (int i=0;i<size;i++) copyLocs[i] = parentLocs[i];
+    	Random rn = new Random();
+		int[] ret = new int[number];
+		for (int i=0;i<number;i++) {
+			int index = rn.nextInt(size-i);
+			ret[i] = copyLocs[index];
+			copyLocs[index] = copyLocs[size-i-1];
+		}
+		Arrays.sort(ret);
+		return ret;
+	}
+	
+	private static void runRandomLocations(int supportStart) throws Exception {
+		if (IowaPWs == null || data == null)
+			readData();
+
+		double low = percentilesIowa[(int)(lowPercentile/percentile_step)];
+		double PCThreshold = percentilesIowa[(int)(PCPercentile/percentile_step)];
+		double EPCThreshold = percentilesIowa[(int)(EPCPercentile/percentile_step)];
+		double PCUPBOUND = percentilesIowa[(int)(PCUpBound/percentile_step)];
+		double PCLOWBOUND = percentilesIowa[(int)(PCLowBound/percentile_step)];
+		System.out.println("low:"+low);
+		System.out.println("PCThreshold:"+PCThreshold);
+		System.out.println("EPCThreshold:"+EPCThreshold);
+		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+		System.out.println("pwclist.size:"+pwclist.size());
+
+		// looking for the EPCs of Iowa
+		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
+		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
+		testEPCs = PWC.PWCRangeByMonth(testEPCs, start_month, end_month);
+		ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
+		trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
+		//PWC.StorePCData(trainEPCs,IowaEPCFile);
+
+		
+		ArrayList<PWC> AllPCs = null;
+		// looking for the PCs of Iowa
+		if (RandomselectPC) {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
+		}
+		else {
+			AllPCs = PWC.PWCRangeByAverage(pwclist, PCLOWBOUND,PCUPBOUND,"PC");
+		}
+		ArrayList<PWC> TestPCs = PWC.PWCRangeByYear(AllPCs, testData_start_year, testData_end_year);
+		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
+		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
+		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
+		if (RandomselectPC) {
+			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
+			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
+		}
+		//PWC.StorePCData(TrainPCs,IowaPCFile);
+		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
+		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
+		// combine PC and EPC into one list
+		for (PWC epc:trainEPCs) {
+			TrainPCs.add(epc);
+		}
+		for (PWC epc:testEPCs) {
+			TestPCs.add(epc);
+		}
+
+		PWC.SortPWCbyStartDate(TrainPCs);
+		PWC.SortPWCbyStartDate(TestPCs);
+		PWC.SortPWCbyStartDate(AllEPCs);
+
+		int back =5, backdays=6;
+		// remove the PCs' which fall out of the range
+		while (TrainPCs.get(0).start_date <=(backdays+back)) {
+			TrainPCs.remove(0);
+		}
+		while (AllEPCs.get(0).start_date <=(backdays+back)) {
+			AllEPCs.remove(0);
+		}
+
+		// skip the one with too few instances that weka can't do cross-validation
+		if (TrainPCs.size()<crossValFolds) return;
+		
+		// get the location support and confidence data
+		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
+		// filter out the locations by support range
+		double support_percentile_step = 0.05;
+		int prev_support_start = -1;
+		for (support_percentile_start=0;support_percentile_start<1;support_percentile_start+=support_percentile_step) {
+			int index = (int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
+			support_start =loclist.get(index).support;
+			if (support_start != supportStart) continue;
+			// skip already tested support_start
+			if (prev_support_start==support_start)
+				continue;
+			else
+				prev_support_start=support_start;
+			index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_end));
+			if (index<=0){ // use threshold
+				support_end = 9999999;
+			} else { // use range
+				support_end =loclist.get(index).support;
+			}
+			ArrayList<PWLocation> locsbysupport= PWLocation.LOCRangeBySupport(loclist, support_start, support_end );
+			if (support_end == 9999999)
+				support_end = loclist.get(0).support;	// output max_support instead of 9999999
+			ArrayList<PWLocation> locs=PWLocation.LOCRangeByConfidence(locsbysupport,confidence_start,confidence_end);
+			int[] exclusive_ids = PWLocation.getIds(locs); Arrays.sort(exclusive_ids);
+			int locNo = exclusive_ids.length;
+			int[] inclusive_ids = new int[totalSampleLocations - locNo];
+			int id_index = 0, id_value = 0;
+			for (int eid:exclusive_ids) {
+				for (int i=id_value;i<eid;i++) {
+					inclusive_ids[id_index] = i;
+					id_index++;
+				}
+				id_value = eid+1;
+			}
+			for (int i=id_value;i<totalSampleLocations;i++) {
+				inclusive_ids[id_index] = i;
+				id_index++;
+			}
+			ArrayList<ClassificationResults> result = new ArrayList<ClassificationResults>();
+			for (int iter=0;iter<10;iter++) {
+				int[] ids = getRandomLocations(inclusive_ids, locNo);
+				if (crossValFolds >1) {
+					result.add(RunWeka.runFoldsInMemory(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,data,TrainPCs,ids,backdays,back));
+				} else {
+					result.add(RunWeka.runInMemory(RunWeka.getBaseClassifier(baseclassifier),null,data,TrainPCs,TestPCs,ids,backdays,back));
+				}
+			}
+			BufferedWriter outresult = new BufferedWriter(new FileWriter("./random_"+maxNonePCDays+"-"+minPCDays+".csv",true));
+			for (ClassificationResults r:result) {
+				r.printout();
+				outresult.write(r.one_record());
+				outresult.flush();
+			}
+			outresult.close();
+			break;
+		}
+	}
 	
 	public static void testPercentileUsed2() throws Exception {
 		PercentileUsed = 1;
@@ -813,11 +957,14 @@ public class flooding_prediction {
 		PCPercentile = 0.6; EPCPercentile = 0.9;
 		PCLowBound = PCPercentile; PCUpBound = EPCPercentile;
 		maxNonePCDays = 2; minPCDays = 13; confidence_start = 0.1; confidence_end = 1;
-		getLocation(163);
+		//getLocation(163);
+		runRandomLocations(7);
 		maxNonePCDays = 2; minPCDays = 12; confidence_start = 0.05; confidence_end = 1;
-		getLocation(538);
+		//getLocation(538);
+		runRandomLocations(75);
 		maxNonePCDays = 2; minPCDays = 11; confidence_start = 0; confidence_end = 1;
-		getLocation(1867);
+		//getLocation(1867);
+		runRandomLocations(46);
 		
 	}
 	
