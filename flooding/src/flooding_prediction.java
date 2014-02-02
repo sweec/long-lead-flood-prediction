@@ -47,7 +47,10 @@ public class flooding_prediction {
 	static double[] confidencethresholds = new double[]{0,0.15,0.2,0.25,0.3};
 	static public int baseclassifier =2; //0:SVM 1:LADTree 2:J48 3:NaiveBayes
 	static public int crossValFolds =5;
-
+	
+	static public boolean loadlocfromfile = true; // Tell run function to load location file (By Jacky 2014-1-31)
+	static public boolean RandomselectLoc = false; // Tell run function to select locations no in the range for comparison (By Jacky 2014-1-31)
+	
 	static public  String[] resultfiles = new String[]{"./results/Individuals.csv","./results/Iowa.csv","./results/All.csv"};
 	
 	public static <T> Void Run_maxNonePCDays(int start, int end, boolean append, Callable<T> func) throws Exception {
@@ -193,6 +196,8 @@ public class flooding_prediction {
 		System.out.println("EPCThreshold:"+EPCThreshold);
 		System.out.println("PCUpBound:"+PCUPBOUND);
 		System.out.println("PCLowBound:"+PCLOWBOUND);
+		
+		System.out.println("Finding PWCs .... ");
 		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
 		
 		System.out.println("pwclist.size:"+pwclist.size());
@@ -212,6 +217,7 @@ public class flooding_prediction {
 		}
 		*/
 		// looking for the EPCs of Iowa
+		System.out.println("looking for the EPCs of Iowa .... ");
 		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
 		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
 		testEPCs = PWC.PWCRangeByMonth(testEPCs, start_month, end_month);
@@ -236,6 +242,7 @@ public class flooding_prediction {
 			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
 			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
 		}
+		System.out.println("Save TrainPCs data to "+ IowaPCFile +" ...");
 		PWC.StorePCData(TrainPCs,IowaPCFile);
 		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
 		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
@@ -247,17 +254,7 @@ public class flooding_prediction {
 			TestPCs.add(epc);
 		}
 		
-		
-		String features[] = DataLoader.features;
-    	String featureFiles[] = DataLoader.featureFiles;
-		String delimit2 = "\\s+";
-		String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
-		String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
-		
-		
 		int back =5, backdays=6;
-		double PW20p = 4.85, PW60p=19.87, PW90p=43.27; // from all locations 1980~2010
-		double PW20pIA = 7.53, PW60pIA=18.63, PW90pIA=34.08; // from 2 locations of Iowa (3941, 3978) 1980~2010
 
 		PWC.SortPWCbyStartDate(TrainPCs);
 		PWC.SortPWCbyStartDate(TestPCs);
@@ -270,8 +267,14 @@ public class flooding_prediction {
 		while (AllEPCs.get(0).start_date <=(backdays+back)) {
 			AllEPCs.remove(0);
 		}
+		// load the location support and confidence data from selected file
 
+		/* ====== Marked by jacky 02-01-2014: this process is replace by calling function getLoclist() ======
 		// find location support and confidence based on the selection of PercentileUsed and then save to a file
+		double PW20p = 4.85, PW60p=19.87, PW90p=43.27; // from all locations 1980~2010
+		double PW20pIA = 7.53, PW60pIA=18.63, PW90pIA=34.08; // from 2 locations of Iowa (3941, 3978) 1980~2010
+
+		System.out.println("Finding location support and confidence and save to "+ idFile[PercentileUsed] +" ...");
 		if (PercentileUsed==0) { //0: Individuals  1: Iowa  2: All locations
 			PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays);
 		} else {
@@ -295,10 +298,17 @@ public class flooding_prediction {
 				PWLocation.CreateLocFile(AllEPCs, featureFiles[2], delimit2, idFile[PercentileUsed], maxNonePCDays,minPCDays,back,backdays,PW20p,PW60p,PW90p);
 			}
 		}
+		*/
+		ArrayList<PWLocation> loclist;
+		// get the location support and confidence data
+		if (loadlocfromfile) {
+			loclist = PWLocation.LoadLocData(idFile[PercentileUsed], "\\s+"); 
+			}
+		else {
+			loclist = getLoclist(AllEPCs, back, backdays);
+			PWLocation.StoreLocData(loclist, idFile[PercentileUsed]);
+		}
 		
-		
-		// load the location support and confidence data from selected file
-		ArrayList<PWLocation> loclist = PWLocation.LoadLocData(idFile[PercentileUsed], delimit2);
 		PWLocation.SortLocbySupport(loclist);//Support high to low
 		// filter out the locations by support range
 		int index =(int) ( (double)(loclist.size()-1) * (1-support_percentile_start));
@@ -320,14 +330,37 @@ public class flooding_prediction {
 		PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, idFile[PercentileUsed], delimit2,trainFile);
 		PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, idFile[PercentileUsed],delimit2, testFile);
 		*/
-		
-		
+	
 		// creat weka file using loc ArrayList
+		String features[] = DataLoader.features;
+    	String featureFiles[] = DataLoader.featureFiles;
+		String delimit2 = "\\s+";
+		String trainFile = "./EPC_arff/train"+trainData_start_year+"_"+trainData_end_year+".arff";
+		String testFile = "./EPC_arff/test"+testData_start_year+"_"+testData_end_year+".arff";
+		if (RandomselectLoc) {
+			String trainRFile = "./EPC_arff/trainR"+trainData_start_year+"_"+trainData_end_year+".arff";
+			String testRFile = "./EPC_arff/testR"+testData_start_year+"_"+testData_end_year+".arff";
+			ArrayList<PWLocation> locsR = new ArrayList<PWLocation>(loclist);
+			for (PWLocation loc: locs){
+				locsR.remove(loc);
+			}
+			System.out.println("Not in range locations:"+locsR.size());
+			locsR = PWLocation.RandomSelection(locsR, locs.size(), 1);
+			System.out.println("Creating trainingR set~");
+			PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, locsR,trainRFile);
+			System.out.println("Creating testR set~");
+			PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locsR, testRFile);
+			if (crossValFolds >1) {
+				RunWeka.runFolds(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,trainRFile);
+			} else {
+				RunWeka.run(RunWeka.getBaseClassifier(baseclassifier),null,trainRFile, testRFile);
+			}
+		}
+		System.out.println("In range locations:"+locs.size());
 		System.out.println("Creating training set~");
 		PWC.createWekaFile(features, featureFiles, delimit2, TrainPCs, backdays, back, locs,trainFile);
 		System.out.println("Creating test set~");
 		PWC.createWekaFile(features, featureFiles, delimit2, TestPCs, backdays, back, locs, testFile);
-		
 		if (crossValFolds >1) {
 			return RunWeka.runFolds(RunWeka.getBaseClassifier(baseclassifier),null,crossValFolds,trainFile);
 		} else {
@@ -528,8 +561,9 @@ public class flooding_prediction {
 			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
 		}
 		//PWC.StorePCData(TrainPCs,IowaPCFile);
-		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
 		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
+		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
+
 		// combine PC and EPC into one list
 		for (PWC epc:trainEPCs) {
 			TrainPCs.add(epc);
@@ -550,14 +584,22 @@ public class flooding_prediction {
 		while (AllEPCs.get(0).start_date <=(backdays+back)) {
 			AllEPCs.remove(0);
 		}
+		System.out.println("Getting the location support and confidence data...");
 
+		ArrayList<PWLocation> loclist;
+		// get the location support and confidence data
+		if (loadlocfromfile) {
+			loclist = PWLocation.LoadLocData(idFile[PercentileUsed], "\\s+"); 
+			}
+		else {
+			loclist = getLoclist(AllEPCs, back, backdays);
+			PWLocation.StoreLocData(loclist, idFile[PercentileUsed]);
+		}
+		System.out.println("total number of locations:"+loclist.size());
+	
 		// skip the one with too few instances that weka can't do cross-validation
 		if (TrainPCs.size()<crossValFolds)
 			return null;
-		
-		// get the location support and confidence data
-		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
-		
 		/** 
 		 * for any set of parameters, always test with all combinations of support and confidence, 
 		 * those are valid if the number of resulting locs filtered falls in [1,500] 
@@ -798,7 +840,7 @@ public class flooding_prediction {
 		return ret;
 	}
 	
-	private static void runRandomLocations(int supportStart) throws Exception {
+	public static void runRandomLocations(int supportStart) throws Exception {
 		if (IowaPWs == null || data == null)
 			readData();
 
@@ -866,7 +908,15 @@ public class flooding_prediction {
 		if (TrainPCs.size()<crossValFolds) return;
 		
 		// get the location support and confidence data
-		ArrayList<PWLocation> loclist = getLoclist(AllEPCs, back, backdays);
+		ArrayList<PWLocation> loclist;
+		// get the location support and confidence data
+		if (loadlocfromfile) {
+			loclist = PWLocation.LoadLocData(idFile[PercentileUsed], "\\s+"); 
+			}
+		else {
+			loclist = getLoclist(AllEPCs, back, backdays);
+			PWLocation.StoreLocData(loclist, idFile[PercentileUsed]);
+		}
 		// filter out the locations by support range
 		double support_percentile_step = 0.05;
 		int prev_support_start = -1;
@@ -969,7 +1019,7 @@ public class flooding_prediction {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		testPercentileUsed2();
+		//testPercentileUsed2();
 		//runInMemory();
 		/*
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],false));

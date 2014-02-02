@@ -520,7 +520,7 @@ public class PWC implements Comparable<PWC>{
 					PCe = PClist.get(r).start_date-back; // current EPS's end date
 					PCs = PCe-days+1; // current EPS's start date
 
-					if (day>=PCs && day<=PCe) { // if this day fulls into an EPS
+					if (day>=PCs && day<=PCe) { // if this day falls into an EPS
 						int index = day-PCs;
 						int i=0;
 						String[] values = line.split(delimit);

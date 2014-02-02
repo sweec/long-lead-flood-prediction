@@ -47,7 +47,14 @@ public class RunIndividual {
 		flooding_prediction.confidence_start = 0.1;
 		flooding_prediction.PercentileUsed =1;
 		flooding_prediction.crossValFolds =5;
+		flooding_prediction.RandomselectPC = true;
+		flooding_prediction.loadlocfromfile = true;
+		flooding_prediction.RandomselectLoc = true;
+
 		
+
+		//flooding_prediction.runInMemory();
+		//flooding_prediction.runRandomLocations(7);
 		flooding_prediction.run();
 		
 	}

@@ -29,6 +29,10 @@ public class PWLocation implements Comparable<PWLocation>{
 		this.confidence = loc.confidence;
 	}
 	
+	public boolean equals(Object anotherInstance) { 
+        return (this.ID== ((PWLocation)anotherInstance).ID);
+    }
+	
 	public int compareTo(PWLocation anotherInstance) { // higt to low
         return new Double(anotherInstance.confidence).compareTo( new Double(this.confidence));
     }
