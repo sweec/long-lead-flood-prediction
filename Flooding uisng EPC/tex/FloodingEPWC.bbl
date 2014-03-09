@@ -1,0 +1,54 @@
+\begin{thebibliography}{1}
+
+\bibitem{cloke2009ensemble}
+H.~Cloke and F.~Pappenberger.
+\newblock Ensemble flood forecasting: a review.
+\newblock {\em Journal of Hydrology}, 375(3):613--626, 2009.
+
+\bibitem{king2003cloud}
+M.~D. King, W.~P. Menzel, Y.~J. Kaufman, D.~Tanr{\'e}, B.-C. Gao, S.~Platnick,
+  S.~A. Ackerman, L.~A. Remer, R.~Pincus, and P.~A. Hubanks.
+\newblock Cloud and aerosol properties, precipitable water, and profiles of
+  temperature and water vapor from modis.
+\newblock {\em Geoscience and Remote Sensing, IEEE Transactions on},
+  41(2):442--458, 2003.
+
+\bibitem{li2008real}
+X.~Li, B.~Plale, N.~Vijayakumar, R.~Ramachandran, S.~Graves, and H.~Conover.
+\newblock Real-time storm detection and weather forecast activation through
+  data mining and events processing.
+\newblock {\em Earth Science Informatics}, 1(2):49--57, 2008.
+
+\bibitem{:/content/aip/magazine/physicstoday/article/65/3/10.1063/PT.3.1475}
+J.~Lubchenco and T.~R. Karl.
+\newblock Predicting and managing extreme weather events.
+\newblock {\em Print edition}, 65(3):31--37, 2012.
+
+\bibitem{mcgovern2011using}
+A.~McGovern, D.~John~Gagne, N.~Troutman, R.~A. Brown, J.~Basara, and J.~K.
+  Williams.
+\newblock Using spatiotemporal relational random forests to improve our
+  understanding of severe weather processes.
+\newblock {\em Statistical Analysis and Data Mining}, 4(4):407--429, 2011.
+
+\bibitem{stensrud2000using}
+D.~J. Stensrud, J.-W. Bao, and T.~T. Warner.
+\newblock Using initial condition and model physics perturbations in
+  short-range ensemble simulations of mesoscale convective systems.
+\newblock {\em Monthly Weather Review}, 128(7):2077--2107, 2000.
+
+\bibitem{supinie2009spatiotemporal}
+T.~A. Supinie, A.~McGovern, J.~Williams, and J.~Abernathy.
+\newblock Spatiotemporal relational random forests.
+\newblock In {\em Data Mining Workshops, 2009. ICDMW'09. IEEE International
+  Conference on}, pages 630--635. IEEE, 2009.
+
+\bibitem{Wang:2013:TLF:2487575.2488220}
+D.~Wang, W.~Ding, K.~Yu, X.~Wu, P.~Chen, D.~L. Small, and S.~Islam.
+\newblock Towards long-lead forecasting of extreme flood events: A data mining
+  framework for precipitation cluster precursors identification.
+\newblock In {\em Proceedings of the 19th ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining}, KDD '13, pages 1285--1293, New York,
+  NY, USA, 2013. ACM.
+
+\end{thebibliography}

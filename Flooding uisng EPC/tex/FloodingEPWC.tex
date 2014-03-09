@@ -1,0 +1,321 @@
+%%This is a very basic article template.
+%%There is just one section and two subsections.
+\documentclass{acm_proc_article-sp}
+\usepackage{multirow}
+%%\usepackage{amsthm}
+
+\begin{document}
+\floatstyle{boxed} 
+\restylefloat{figure}
+
+\title{Towards Long-Lead Flood Prediction: Discovering The
+Spatiotemporal Co-occurrence Patterns of Extreme Precipitation Clusters}
+\numberofauthors{3}
+\author{
+\alignauthor
+Chung-Hsien Yu \\
+       \affaddr{Department of Computer Science}\\
+       \affaddr{University of Massachusetts Boston}\\
+       \email{csyu@cs.umb.edu}
+% 2nd. author
+\alignauthor
+Dong Luo \\
+       \affaddr{Department of Computer Science}\\
+       \affaddr{University of Massachusetts Boston}\\
+       \email{dongluo@gmail.com}
+%\and  % use '\and' if you need 'another row' of author names
+\alignauthor
+Wei Ding \\
+       \affaddr{Department of Computer Science}\\
+       \affaddr{University of Massachusetts Boston}\\
+       \email{ding@cs.umb.edu}
+%\and  % use '\and' if you need 'another row' of author names
+\and
+\alignauthor
+David L. Small \\
+       \affaddr{Department of Civil and Environmental Engineering}\\
+       \affaddr{Tufts University}\\
+       \email{David.Small@tufts.edu}
+\alignauthor
+Shafiqul Islam \\
+       \affaddr{Department of Civil and Environmental Engineering}\\
+       \affaddr{Tufts University}\\
+       \email{Shafiqul.Islam@tufts.edu}
+}
+
+\date{02 Dec 2013}
+% Just remember to make sure that the TOTAL number of authors
+% is the number that will appear on the first page PLUS the
+% number that will appear in the \additionalauthors section.
+\maketitle
+\begin{abstract}
+
+\end{abstract}
+% A category with the (minimum) three required fields
+\category{H.2.8}{Database Applications}{Data mining}
+%A category including the fourth, optional field follows...
+%\category{D.2.8}{Software Engineering}{Metrics}[complexity measures, performance measures]
+
+\terms{Algorithms}
+
+\keywords{Flood Prediction, Precipitation Cluster, Spatiotemporal Pattern} 
+
+\section{Introduction}
+\label{sec:intro}
+Due to the chaotic nature of atmospheric circulation, it is still a challenge
+for current scientist to accurately predict extreme weather phenomena such as
+hurricane, tornado, or severe flood. Traditionally, building a atmospheric
+models to simulate atmospheric circulation in the near future is the most
+popular and common way of predicting weather.\cite{cloke2009ensemble} However,
+there are limitations for these weather forecasting models which use the
+deterministic method of simulation because the accuracy drop dramatically when
+simulating the longer
+lead-time.\cite{:/content/aip/magazine/physicstoday/article/65/3/10.1063/PT.3.1475}
+Therefore, the acceptable prediction range of this approach is within five days.
+\newline Most recently, data mining techniques have been widely adopted to
+study extreme weather phenomena and deeply understand the formation and
+correlated factors of these
+phenomena.
+\cite{li2008real} \cite{supinie2009spatiotemporal} \cite{mcgovern2011using}
+ \cite{Wang:2013:TLF:2487575.2488220} Furthermore, the forecast systems based on
+data mining framework has the potential of delivering long-lead weather
+prediction, such as the study done by Wang et al.
+\cite{Wang:2013:TLF:2487575.2488220}. In Wang's research, precipitation
+``blocking'' is assumed to be the trigger of severe flood. In other words, if
+the accumulated precipitation within a certain time period at a certain location
+passes the unusual high level, this atmospheric regime is considered as
+blocking. Therefore, instead of doing the daily weather forecast, data mining
+approach can be applied to predict precipitation blocking which has the high
+risk of resulting extreme flood.
+\newline In our research, we also target our long term goal on predicting flood
+events in long range of time. We start with the new definition of the atmospheric
+regime of blocking regarding to the precipitation, rather than using the fixed
+length for every temporal blocks proposed
+in \cite{Wang:2013:TLF:2487575.2488220}, our proposed method identify the
+blocks called cluster in our case with different length of time. The
+clusters captured by this method has the better representation of true nature of
+precipitation blocking. When given a certain threshold, we are be able to
+separate the extreme precipitation cluster (EPC), which has the higher potential
+in causing flood than other normal precipitation clusters (PC). By doing this method, we can
+focus on investigating these clusters to find the conditions under which the PCs
+turn into EPCs by extracting the most correlated data for being used in the data
+mining processes. This clustering process is also eliminated the issue of imbalanced data while the entire atmospheric data are used as finding the extremes.
+\newline Additionally, the atmospheric features are notoriously complex
+while used to build a forecast model or applied to data mining techniques.
+Therefore, selecting the most effective and conductive features to be used in
+forecast system is a difficult task. Traditionally, the job of choosing the
+features from atmospheric variables for simulating atmospheric circulation
+heavily relies on the domain experts with decades of observations and field
+experiments.
+\cite{:/content/aip/magazine/physicstoday/article/65/3/10.1063/PT.3.1475}
+However, even with the understanding of the formation of certain atmospheric
+regime, the scientists still have difficulty finding the initial stage or location
+to start the modeling simulation. The formation of the tropical
+cyclone, for example, always starts with an ``eye'' at a certain location, but predicting when and where will be an eye of cyclone one week in advance is nearly impossible. On the other hand, in order to predict whether a atmospheric regime will occur at a certain location, the modeling needs to run the simulation starting from every possible initial states or locations which is computational expensive. \cite{stensrud2000using} 
+\\We propose using ``\textbf{Spatiotemporal Co-occurrence Patterns (STCP)}'' to predict extreme precipitation clusters which is a very efficient way to locate the initial state or the precursors. Our main assumption is that the extreme precipitation cluster(EPC) is contributed by the \textbf{Precipitable Water Clusters} (PWCs) because the rain falls must come down from the precipitable water retained in the atmosphere. Using the same idea of finding EPC and then applying it on precipitable water data, the PWCs can be identified. Since relationships between one EPC and PWCs are assumed, and there exist patterns of how the PWCs transfer to EPC.  For instance, let's assume that when there is a PWC formed at Gulf Coast today, under certain circumstances, this PWC always moves to Iowa one week later and then start dropping heavy rain for weeks. This rain fall will form a EPC at Iowa and could eventually cause a flood event. Therefore, this Spatiotemporal Co-occurrence Pattern is described as following: ``If there is a PWC formed at Gulf Coast, under certain conditions, there will be an EPC occurrence at Iowa one week later.'' With this pattern in mind,the heavy rainfall is predictable at Iowa one week ahead.
+\newline In order to evaluate correlation between the appearances of PWCs and
+EPCs, we then next define support and confidence measurements based on the
+temporal co-occurrence between one EPC and PWCs. By evaluating the support and
+confidence, the most correlated locations will be selected for further
+investigation on the so-called ``certain conditions'' which could be causing the
+transformation of PWCs to EPC through data mining techniques. As a result, by using this proposed method, the searching space of initial states can be reduced more than half.
+\newline
+To evaluate our proposed methods and approaches, 40-year worth of
+historical atmosphere data of northern hemisphere to predict the EPCs at
+Iowa was used in our experiments. The results show that not only is the proposed method
+of predicting EPC more efficient than the methods using daily-based
+forecasting, but also it is able to do a long range prediction with about 80\% on
+accuracy.
+\newline Overall, our contributions of this research paper are listed as
+follows:
+\begin{itemize}
+\item We proposed a novel method in identifying the atmospheric regime of
+precipitation blocking and precipitable water blocking. With this
+definition of blocking as a cluster, the extreme precipitation cluster (EPC) from the regular precipitation cluster (PC)is distinguished. 
+\item By focusing on EPCs and PCs, we are able to use most correlated data
+extracted from the huge atmospheric data sets for forecasting. This way
+eliminates the problem of imbalanced data while the entire data set is utilized to
+predict the extreme.
+\item In finding the relationship between EPCs and PWCs, we further propose
+the concept of \textbf{Spatiotemporal Co-occurrence Patterns} which is
+identified by the degree of association between the EPCs and PWCs in space and
+time. This degree of association is measured by our new invented support and
+confidence score. With these measurement, the feature
+space for predicting the weather extreme events is reduced more the half via pruning the
+irrelevant locations.
+\item We evaluate our approach by applying it on the real world atmosphere data
+set. The results show that our method identifies the PWCs resulting the
+flooding at state of Iowa and efficiently predicts future EPCs in the long
+term future ($7$ to $15$ days ahead) with the 80\% accuracy.
+\end{itemize}
+ The rest of this paper is organized as follows. The related works are
+discussed in Section~\ref{sec:relatedwork}. In Section~\ref{sec:EPC}, we first
+introduce our definition of the precipitation cluster (PC) and the
+extreme precipitation cluster. With the definitions of the PC, we then apply the
+same cluster idea in defining PWC. Next, we propose Spatiotemporal
+Co-occurrence Pattern (STCP) to describe the association between EPC and PWC in
+Section~\ref{sec:stcopattern}, including the definition of our proposed
+support and confidence measurements. In Section~\ref{sec:CaseStudy}, we
+apply our approach to evaluate and prove our concept through our designed
+experiments using the real world data set. The results and conclusions are
+discussed in Section~\ref{sec:Conclusion}.
+\section{Related Work}
+\label{sec:relatedwork}
+
+\section{Extreme Precipitation Cluster}
+\label{sec:EPC}
+\newtheorem{mydef}{Definition}
+From the basic understanding, the extreme flooding is always caused by the
+torrential rain and this type of torrential rain always last several days.
+Therefore, if we can identify the abrupt increase precipitation during certain
+amount of time and treat this period of time as a ``block'' or ``cluster''.
+Then, this cluster can be used to indicate the potential of future flood event.
+Therefore, we introduce a new definition of \textbf{Extreme Precipitation
+Cluster} to describe this phenomena.
+\begin{mydef} 
+\label{def:PC}
+\textbf{Precipitation Cluster(PC):} A PC is a time series data , $p_1 , p_2 ,
+\ldots , p_n $, consisting of $n$ precipitation data at a certain location. The
+precipitation data right before the start and right after the end of a PC, $p_0$
+and $p_{n+1}$, must be less than a low-bound threshold $\theta$ and every
+precipitation data included in this PC must be greater than $\theta$. In
+addition, $n \geq \pi $, where $\pi $ is a user-defined threshold used to set
+the minimal length of a PC.
+\end{mydef} 
+As a result, a PC can be used to represent a contiguous rainfalls during a
+certain period of time at a certain location. With this definition, there is
+no overlapping PCs over the searching space.
+\begin{mydef}
+\label{def:EPC}
+\textbf{Extreme Precipitation Cluster(EPC):} An EPC is also a PC. If the
+average precipitation of a PC is greater than a high-bound threshold $\alpha$. This PC is
+defined as an EPC.
+\end{mydef} 
+Thus, with the chosen of appropriate threshold $\alpha$, an EPC can represent the extreme condition of abrupt increase in rainfalls during a certain period of time.
+\subsection{The Thresholds}
+\label{sec:Thresholds}
+Then, the next question is what are the appropriate thresholds should be chosen to identify the PCs and EPCs. Since we are try to identify the abnormal situation, the percentile measure over the entire precipitation data of the study location is used to decide the thresholds. For example, if the average precipitation of a PC is greater than the 90\% percentile value of the entire precipitation data, then this PC is defined as EPC. Based on the same idea, 20\% percentile can be used as the low-bound threshold $\theta$ to find PCs.
+Thus, the values of these two thresholds, $\alpha$ and $\theta$, are between $0$ and $1$. Including another threshold $\pi$, the further discussion on how these thresholds should be chosen will be discussed in Section~\ref{sec:CaseStudy}, .      
+
+\subsection{Precipitable Water Clusters}
+\label{sec:PWC}
+By definition, the precipitable water measure is the total water vapor contains in the atmospheric column bottomed with a ground surface. This measurement is used to indicate the potential of rainfalls of a certain area. In other words, the precipitable water will start turning into precipitation under certain conditions such as the change of temperature up in the atmosphere. \cite{king2003cloud} Accordingly, the high amount of precipitable water will produce high amount of rain. 
+\newline Therefore, the ``blocking" phenomena of precipitable water at a certain location is also studies in our research. The follow is our formal definition of \textbf{Precipitable Water Cluster (PWC)}. 
+\begin{mydef} 
+\label{def:PWC}
+\textbf{Precipitable Water Clusters(PWC):} A PWC is a time series data , $w_1 , w_2 ,
+\ldots , w_n $, consisting of $n$ precipitable water data at a certain location. The
+precipitable water data right before the start and right after the end of a PWC, $w_0$
+and $w_{n+1}$, must be less than a low-bound threshold $\theta$ and every
+precipitable water data included in this PWC must be greater than $\theta$. In
+addition, $n \geq \pi $, where $\pi $ is a user-defined threshold used to set
+the minimal length of a PC. Also, the average precipitable water of a PWC is greater than a high-bound threshold $\alpha$.
+\end{mydef} 
+To be consistent, the same thresholds are used while searching PWCs as EPCs in our study.
+
+\section{Spatiotemporal Co-Occurrence Patterns}
+\label{sec:stcopattern}
+With our definitions of EPC and PWC as well as the assumption that PWC has the high possibility of transforming to EPC, the concept of \textbf{Spatiotemporal Co-Occurrence Pattern (STCP)} is then proposed to describe this type of transformation. This main assumption is that there exist patterns of how PWC transform to EPC. This pattern of transformation progresses over the spatiotemporal space. The formal definition of a Spatiotemporal Co-Occurrence Patterns is given as follow:
+\begin{mydef} 
+\label{def:STCP}
+\textbf{Spatiotemporal Co-Occurrence Pattern (STCP):} A STCP of a location $A$ is a transformation pattern which describes a PWC located at location $B$ during time period $t_1$ progress and then transform to an EPC at location $A$ during time period $t_2$ under certain circumstances. Location $B$ is defined as the ``\textbf{Initial State}" and $t_2 - t_1$ as the ``\textbf{Lead-Time}" of this STCP.     
+\end{mydef}
+Thus, if all STCPs of a location are identified, then the occurrences of EPCs at this location can be foreseen by detecting the occurrence of PWC at each initial state with certain lead-time ahead. 
+\newline 
+Now, the challenge is that how the STCPs of a certain location can be identified. We resolve this issue by proposing the measurements of support and confidence. 
+
+\subsection{Support and Confidence}
+\label{sec:support}
+To evaluate the relationship between EPC and PWC, the two measurement, support and confidence, are defined and described as follows.  
+\begin{mydef}
+\label{def:suportfunction}
+Given an EPC $P$ and a PWC $W$, both $P$ and $W$ are time series with length of $q$ and $r$ respectively. Therefore, $P = \{ t_{a+1}, t_{a+2}, \ldots , t_{a+q} \} $ and $W = \{ t_{b+1}, t_{b+2}, \ldots , t_{b+r} \}$,  $t_i \in T$ where $T = \{ t_1, t_2, \ldots , t_s \} $. $T$ is the collection of the entire time series space and $s$ is the length of this time series.
+\newline 
+Given a lead-time $l$, $\acute{P} = \{ t_{a+1-l}, t_{a+2-l}, \ldots , t_{a+q-l} \} $. This means that $\acute{P}$ is a time series obtained by shifting $P$ by $l$ forward. Then, a measure function, denoted as $\textbf{support(P,W)}$, returns $length(\acute{P} \cap W)$ as the \textbf{support score} between $P$ and $W$.
+\end{mydef} 
+Basically, this support score is used to indicate the possibility of whether an EPC is contributed by a certain PWC by measuring the ``overlapping" length of this PWC and the shifted EPC over temporal space. For example, if there is an EPC between July 14 and July 19 and a PWC between July 2 and July 11, with the given lead-time of 7 days, the support score measured from this EPC and PWC is 5 (days), the overlapping between July 7 and July 11.
+\newline
+With this $support()$ function, the total support score related to a target location is then defined as follow:
+\begin{mydef}
+\label{def:totalsuport}
+Given a location $A$, there are total $j$ EPCs identified during the period of time T and they are $\{ P_1 , P_2 , \ldots , P_j \}$. Meanwhile, the other location $B$ has total of $k$ PWCs identified and they are $\{ W_1 , W_2 , \ldots , W_k \}$. Then, the total support score of location $B$ in respect to location $A$ is: 
+\begin{center}
+    $\sum_{x=1}^{j} \sum_{y=1}^{k} support(P_x,W_y) $
+\end{center}
+\end{mydef}
+By choosing a target location, the total support scores of other locations over the study spatial space then can be obtained. The locations with the high total support scores have higher possibility of being the initial states of STCPs in respect to the chosen target location. 
+\newline 
+However, there might be the locations with high total support scores due to the long length of PWCs, not due to the transformation of PWC to EPC. Therefore, another measurement called confidence is then introduced to indicate this situation. 
+\begin{mydef}
+\label{def:confidence}
+The confidence of location $B$ is defined as: 
+\begin{center}
+    $ \frac{\sum_{x=1}^{j} \sum_{y=1}^{k} support(P_x,W_y)}{\sum_{y=1}^{k} length(W_y)} $
+\end{center}
+\end{mydef}
+The range of this confidence is between 0 and 1. When the confidence equals to 1, it means that every PWCs of one location always transformed to EPCs at target location after a certain lead-time. 
+\newline
+By investigating these two measurements, the searching space for initial states of the STCPs is reduced efficiently. This reduction is done by setting thresholds on support and confidence because the higher the support and confidence the higher the possibility of a location being a initial state.
+\subsection{Identify The Patterns}
+\label{sec:patterns}  
+Thus, our proposed approach not only provide a way of identifying the initial locations of spatiotemporal patterns of extreme precipitation clusters but also further apply data mining technique to extracted these patterns which are used to built a model to predict the future EPCs with lead time of more than 7 days. In our research, Decision Tree and AdaBoost are chosen as our main data mining method to learn the patterns. The advantage of using these two kind of supervised learning methods is that the feature selection feature is build-in with them. In other words, we can eliminate more of those factors and locations that are not associated with the transformation patterns.
+\newline
+To start this pattern learning process, we collect the historical data of those atmospheric factors, such as temperature data at certain altitude ,which might contribute to the patterns and only the data belongs to the initial locations selected by our proposed method are included. These factors are used as the features to construct an instance. In addition, the patterns we try to catch is over spatiotemporal space so the spatial and temporal dimensions are also considered when constructing an instance. This 3-dimensional feature space is consist of the atmospheric factors of different location and different time periods. For example, if there are 9 atmospheric factors chosen and there are 500 initial locations and 7 days are included, then there will be $ 9 \times 500 \times 7 $ features included in an instance.
+\newline
+Since this is a supervised learning process, we need to define the class label for each instance. Our goal is to find whether certain pattens will cause EPCs after a certain period of time. When the lead-time is set as 7 days, the class label of an instance should be a positive class if EPC occurs at target location 7 days after the last day of this instance, otherwise it is a negative class. Thus, an instance with feature space between July 1 and July 7 is a positive class if there is a EPC occurred on July 14.
+\newline 
+Through this supervised learning as well as feature selection processes, we then can obtain a spatiotemporal pattern of how a EPC is formed. The pattern learned by Decision Tree might be described as follow: `` When the temperature at location A dropped to a certain degree at day 1 and then the temperature at location B increased to a certain degree at day 4 along with the continuous high wind and water vapor at location C from day 2 to day 5, then there will be a EPC on day 15 at target location".  
+\newline 
+Considering the possibility of the fact that there are more than one spatiotemporal pattern of forming EPCs at one location, the AdaBoost method is then adopted to construct a predictive model by consolidating all the patterns learned by Decision Tree. During this ``boosting" process, only the highly correlated patterns are chosen to form the model. Using this predictive model, the potential EPCs can be predicted in advance with a long lead-time or more than 7 days. Extended from the EPCs prediction, people can be alerted about the possible occurrence of extreme flood in advance.   
+
+\section{Case Study: State of Iowa}
+\label{sec:CaseStudy}
+To evaluate our approach, the 30 years of precipitation data at State of Iowa was chosen for the investigation on the EPCs occurred in Iowa. Next, the precipitable water data of northern hemisphere was used to identify the PWCs occurred at different locations during the same 40 years period of time. Then, we applied our support and confidence measurements to measure the relationship between the EPCs of Iowa and the PWCs of other locations. With this quantized measures, we then identified the potential initial states or locations of the Spatiotemporal Co-occurrence Patterns of EPCs in Iowa. Furthermore, the data mining techniques were adopted to learn the Spatiotemporal Co-occurrence Patterns from the atmospheric conditions of these identified locations. 
+\\newline 
+These learned conditions are considered as the precursors of the occurrences of EPCs in Iowa so they can be used to build the model for predicting the EPC occurrences. Using the same approach and randomly selecting the locations from those locations which are not identified as the potential initial states, we built different models to compare with the one with initial states. The result showed that the model with the initial locations selected by our proposed support and confidence outperformed the other models built using other non-initial locations. The details of our experiments are illustrated in the following sections. 
+\subsection{Data Preprocessing}   
+The area average daily precipitation accumulation of Iowa between 1980 and 2010 was obtained for our experiments originally. Since our long term goal is to predict extreme flooding, the accumulated precipitations of winter seasons (from November to February) were removed to eliminate the precipitation of snowfalls. This way, the patterns of how the flooding caused by extreme rainfalls clusters can be truly captured by our proposed method.     
+\newline
+Next, we evenly divided the northern hemisphere into $5,328$ geographic locations, latitude-wise and longitudes-wise. We then extracted historical atmospheric data of each location from the NCEP-NCAR Reanalysis dataset\cite{kalnay1996ncep}.       
+
+\subsection{Identifying Extreme Precipitation Cluster}
+Based on Definition~\ref{def:PC} and \ref{def:EPC}, the low-bound threshold $\theta$ was set to the 20\% percentile value among the 30 year daily precipitation accumulation, the high-bound threshold $\alpha$ was set to the 90\% percentile value, and the threshold for
+minimal length of a PC, $\pi$ was set to 7 days. With this configuration, we identified   $77$ EPCs in Iowa during 1980 and 2010. Using the percentile values as thresholds to identify EPCs, we are able to find the abrupt increase in rainfalls at Iowa during a certain period of time.
+\newline 
+The daily precipitable water of the northern hemisphere were obtained and then used to identify the PWCs occurred at those $5,328$ geographic locations. The same approach used for searching EPCs was adopted to search for the PWCs. Therefore, the thresholds were also needed to configure the search. We set $\pi$ to 7 days, the same setting for finding EPCs. The percentile value concept was also used for obtaining $\theta$ and $\alpha$. However, we experimented with three different types of percentile values obtained from different scopes of precipitable water data.
+\subsection{Precipitable Water Cluster Thresholds}
+The first type of thresholds are the percentile values among all locations in northern hemisphere. We called this type as global thresholds because these thresholds represents the percentile of entire precipitable water of northern hemisphere. Thus, only one set of thresholds is needed to identify the extreme clusters. These clusters are considered as the global clusters which contain extremely high accumulation of precipitable water because the average precipitable water of this type of cluster is greater than 90\% percentile of overall precipitable water.  
+\newline 
+The second type of thresholds are the local thresholds. One location has its own thresholds calculated from the historical precipitable water recorded at this location. This way, the identified clusters are location-constrained and represent the abrupt increase in precipitable water at certain locations. 
+\newline 
+The third type of thresholds are called target thresholds. In our case, the thresholds are calculated based on the precipitable water observed at the locations in Iowa. Therefore, only one set of thresholds is needed for searching the extreme clusters. The accumulation of precipitable water contained in this type of clusters should be the similar or higher than the accumulation contained in the clusters appearing in Iowa. 
+\newline
+Based in these three types of thresholds, we then identified three sets of PWCs through our searching algorithm. The results are shown in Table~\ref{tab:thresholds}.
+\begin{table}
+
+\centering
+\caption{The list of identified PWCs using different type of thresholds.}
+\begin{tabular}{| l | c | r |}
+    \hline
+    1 & 2 & 3 \\ \hline
+    4 & 5 & 6 \\ \hline
+    7 & 8 & 9 \\
+    \hline
+\end{tabular}
+\label{tab:thresholds}
+\end{table}
+
+\subsection{Co-Occurrence Locations}
+
+\subsection{Spatiotemporal Co-occurrence Patterns Learning}
+
+
+\subsection{Predicting Future Extreme Precipitation Clusters}
+
+\section{Conclusion}
+\label{sec:Conclusion}
+
+\bibliographystyle{abbrv}
+\bibliography{sigproc} 
+\balancecolumns
+\end{document}

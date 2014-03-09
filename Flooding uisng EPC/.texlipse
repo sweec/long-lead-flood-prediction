@@ -1,0 +1,14 @@
+#TeXlipse project settings
+#Sat Nov 09 00:24:25 EST 2013
+markTmpDer=true
+builderNum=2
+outputDir=pdf/
+makeIndSty=
+bibrefDir=
+outputFormat=pdf
+tempDir=tmp
+mainTexFile=FloodingEPWC.tex
+outputFile=FloodingEPWC.pdf
+langSpell=en
+markDer=false
+srcDir=tex/
