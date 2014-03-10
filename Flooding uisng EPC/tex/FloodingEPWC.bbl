@@ -5,6 +5,13 @@ H.~Cloke and F.~Pappenberger.
 \newblock Ensemble flood forecasting: a review.
 \newblock {\em Journal of Hydrology}, 375(3):613--626, 2009.
 
+\bibitem{kalnay1996ncep}
+E.~Kalnay, M.~Kanamitsu, R.~Kistler, W.~Collins, D.~Deaven, L.~Gandin,
+  M.~Iredell, S.~Saha, G.~White, J.~Woollen, et~al.
+\newblock The ncep/ncar 40-year reanalysis project.
+\newblock {\em Bulletin of the American meteorological Society},
+  77(3):437--471, 1996.
+
 \bibitem{king2003cloud}
 M.~D. King, W.~P. Menzel, Y.~J. Kaufman, D.~Tanr{\'e}, B.-C. Gao, S.~Platnick,
   S.~A. Ackerman, L.~A. Remer, R.~Pincus, and P.~A. Hubanks.

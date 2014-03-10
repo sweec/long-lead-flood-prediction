@@ -2,6 +2,7 @@
 %%There is just one section and two subsections.
 \documentclass{acm_proc_article-sp}
 \usepackage{multirow}
+\usepackage{graphicx}
 %%\usepackage{amsthm}
 
 \begin{document}
@@ -146,7 +147,7 @@ irrelevant locations.
 \item We evaluate our approach by applying it on the real world atmosphere data
 set. The results show that our method identifies the PWCs resulting the
 flooding at state of Iowa and efficiently predicts future EPCs in the long
-term future ($7$ to $15$ days ahead) with the 80\% accuracy.
+term future ($7$ to $15$ days ahead) with 80\% accuracy.
 \end{itemize}
  The rest of this paper is organized as follows. The related works are
 discussed in Section~\ref{sec:relatedwork}. In Section~\ref{sec:EPC}, we first
@@ -195,7 +196,7 @@ Thus, with the chosen of appropriate threshold $\alpha$, an EPC can represent th
 \subsection{The Thresholds}
 \label{sec:Thresholds}
 Then, the next question is what are the appropriate thresholds should be chosen to identify the PCs and EPCs. Since we are try to identify the abnormal situation, the percentile measure over the entire precipitation data of the study location is used to decide the thresholds. For example, if the average precipitation of a PC is greater than the 90\% percentile value of the entire precipitation data, then this PC is defined as EPC. Based on the same idea, 20\% percentile can be used as the low-bound threshold $\theta$ to find PCs.
-Thus, the values of these two thresholds, $\alpha$ and $\theta$, are between $0$ and $1$. Including another threshold $\pi$, the further discussion on how these thresholds should be chosen will be discussed in Section~\ref{sec:CaseStudy}, .      
+Thus, the values of these two thresholds, $\alpha$ and $\theta$, are between $0$ and $1$. Including another threshold $\pi$, the further discussion on how these thresholds should be chosen will be discussed in Section~\ref{sec:3typethresholds}.      
 
 \subsection{Precipitable Water Clusters}
 \label{sec:PWC}
@@ -229,18 +230,19 @@ Now, the challenge is that how the STCPs of a certain location can be identified
 To evaluate the relationship between EPC and PWC, the two measurement, support and confidence, are defined and described as follows.  
 \begin{mydef}
 \label{def:suportfunction}
-Given an EPC $P$ and a PWC $W$, both $P$ and $W$ are time series with length of $q$ and $r$ respectively. Therefore, $P = \{ t_{a+1}, t_{a+2}, \ldots , t_{a+q} \} $ and $W = \{ t_{b+1}, t_{b+2}, \ldots , t_{b+r} \}$,  $t_i \in T$ where $T = \{ t_1, t_2, \ldots , t_s \} $. $T$ is the collection of the entire time series space and $s$ is the length of this time series.
+Given an EPC $P$ and a PWC $W$, both $P$ and $W$ are time series with length of $q$ and $r$ respectively. Therefore, $P = \{ t_{a+1}, t_{a+2}, \ldots , t_{a+q} \} $ and \\
+$W = \{ t_{b+1}, t_{b+2}, \ldots , t_{b+r} \}$,  $t_i \in T$ where $T = \{ t_1, t_2, \ldots , t_s \} $. $T$ is the collection of the entire time series space and $s$ is the length of this time series.
 \newline 
-Given a lead-time $l$, $\acute{P} = \{ t_{a+1-l}, t_{a+2-l}, \ldots , t_{a+q-l} \} $. This means that $\acute{P}$ is a time series obtained by shifting $P$ by $l$ forward. Then, a measure function, denoted as $\textbf{support(P,W)}$, returns $length(\acute{P} \cap W)$ as the \textbf{support score} between $P$ and $W$.
+Given a lead-time $l$, we have $\acute{P} = \{ t_{a+1-l}, t_{a+2-l}, \ldots , t_{a+q-l} \} $ , where $\acute{P}$ is a time series obtained by shifting $P$ by $l$ forward. Then, a measure function, denoted as $\textbf{support(P,W)}$, returns $length(\acute{P} \cap W)$ as the \textbf{support score} between $P$ and $W$.
 \end{mydef} 
 Basically, this support score is used to indicate the possibility of whether an EPC is contributed by a certain PWC by measuring the ``overlapping" length of this PWC and the shifted EPC over temporal space. For example, if there is an EPC between July 14 and July 19 and a PWC between July 2 and July 11, with the given lead-time of 7 days, the support score measured from this EPC and PWC is 5 (days), the overlapping between July 7 and July 11.
 \newline
 With this $support()$ function, the total support score related to a target location is then defined as follow:
 \begin{mydef}
 \label{def:totalsuport}
-Given a location $A$, there are total $j$ EPCs identified during the period of time T and they are $\{ P_1 , P_2 , \ldots , P_j \}$. Meanwhile, the other location $B$ has total of $k$ PWCs identified and they are $\{ W_1 , W_2 , \ldots , W_k \}$. Then, the total support score of location $B$ in respect to location $A$ is: 
+Given a location $A$, there are total $j$ EPCs identified during the period of time T and they are $\{ P_1 , P_2 , \ldots , P_j \}$. Meanwhile, the other location $B$ has total of $k$ PWCs identified and they are $\{ W_1 , W_2 , \ldots , W_k \}$. Then, the total support score of location $B$ with respect to location $A$ is: 
 \begin{center}
-    $\sum_{x=1}^{j} \sum_{y=1}^{k} support(P_x,W_y) $
+    $SUPP(B|A)=\sum_{x=1}^{j} \sum_{y=1}^{k} support(P_x,W_y) $
 \end{center}
 \end{mydef}
 By choosing a target location, the total support scores of other locations over the study spatial space then can be obtained. The locations with the high total support scores have higher possibility of being the initial states of STCPs in respect to the chosen target location. 
@@ -248,30 +250,30 @@ By choosing a target location, the total support scores of other locations over 
 However, there might be the locations with high total support scores due to the long length of PWCs, not due to the transformation of PWC to EPC. Therefore, another measurement called confidence is then introduced to indicate this situation. 
 \begin{mydef}
 \label{def:confidence}
-The confidence of location $B$ is defined as: 
+The confidence of location $B$ with $k$ PWCs,  $\{ W_1 , W_2 , \ldots , W_k \}$, with respect to location $A$ is defined as: 
 \begin{center}
-    $ \frac{\sum_{x=1}^{j} \sum_{y=1}^{k} support(P_x,W_y)}{\sum_{y=1}^{k} length(W_y)} $
+    $ CONF(B|A) = \frac{SUPP(B|A)}{\sum_{y=1}^{k} length(W_y)} $
 \end{center}
 \end{mydef}
 The range of this confidence is between 0 and 1. When the confidence equals to 1, it means that every PWCs of one location always transformed to EPCs at target location after a certain lead-time. 
 \newline
 By investigating these two measurements, the searching space for initial states of the STCPs is reduced efficiently. This reduction is done by setting thresholds on support and confidence because the higher the support and confidence the higher the possibility of a location being a initial state.
-\subsection{Identify The Patterns}
+\subsection{Identifying The Patterns}
 \label{sec:patterns}  
-Thus, our proposed approach not only provide a way of identifying the initial locations of spatiotemporal patterns of extreme precipitation clusters but also further apply data mining technique to extracted these patterns which are used to built a model to predict the future EPCs with lead time of more than 7 days. In our research, Decision Tree and AdaBoost are chosen as our main data mining method to learn the patterns. The advantage of using these two kind of supervised learning methods is that the feature selection feature is build-in with them. In other words, we can eliminate more of those factors and locations that are not associated with the transformation patterns.
+Thus, our proposed approach not only provide a way of identifying the initial locations of spatiotemporal patterns of extreme precipitation clusters but also further apply data mining technique to extracted these patterns which are used to built a model to predict the future EPCs with lead time of more than 7 days. In our research, Decision Tree is chosen as our main data mining method to learn the patterns. The advantage of using this kind of supervised learning methods is that the feature selection feature is build-in within it. In other words, we can eliminate more of those factors and locations that are not associated with the transformation patterns.
 \newline
-To start this pattern learning process, we collect the historical data of those atmospheric factors, such as temperature data at certain altitude ,which might contribute to the patterns and only the data belongs to the initial locations selected by our proposed method are included. These factors are used as the features to construct an instance. In addition, the patterns we try to catch is over spatiotemporal space so the spatial and temporal dimensions are also considered when constructing an instance. This 3-dimensional feature space is consist of the atmospheric factors of different location and different time periods. For example, if there are 9 atmospheric factors chosen and there are 500 initial locations and 7 days are included, then there will be $ 9 \times 500 \times 7 $ features included in an instance.
+To start this pattern learning process, we collect the historical data of those atmospheric factors, such as temperature data at certain altitude ,which might contribute to the patterns and only the data belongs to the initial locations selected by our proposed method are included. These factors are used as the features to construct an instance. In addition, the patterns we try to capture is over spatiotemporal space so the spatial and temporal dimensions are also considered when constructing an instance. This 3-dimensional feature space is consist of the atmospheric factors of different location and different time periods. For example, if there are 9 atmospheric factors chosen and there are 500 initial locations and 7 days are included, then there will be $ 9 \times 500 \times 7 $ features included in an instance.
 \newline
 Since this is a supervised learning process, we need to define the class label for each instance. Our goal is to find whether certain pattens will cause EPCs after a certain period of time. When the lead-time is set as 7 days, the class label of an instance should be a positive class if EPC occurs at target location 7 days after the last day of this instance, otherwise it is a negative class. Thus, an instance with feature space between July 1 and July 7 is a positive class if there is a EPC occurred on July 14.
 \newline 
 Through this supervised learning as well as feature selection processes, we then can obtain a spatiotemporal pattern of how a EPC is formed. The pattern learned by Decision Tree might be described as follow: `` When the temperature at location A dropped to a certain degree at day 1 and then the temperature at location B increased to a certain degree at day 4 along with the continuous high wind and water vapor at location C from day 2 to day 5, then there will be a EPC on day 15 at target location".  
 \newline 
-Considering the possibility of the fact that there are more than one spatiotemporal pattern of forming EPCs at one location, the AdaBoost method is then adopted to construct a predictive model by consolidating all the patterns learned by Decision Tree. During this ``boosting" process, only the highly correlated patterns are chosen to form the model. Using this predictive model, the potential EPCs can be predicted in advance with a long lead-time or more than 7 days. Extended from the EPCs prediction, people can be alerted about the possible occurrence of extreme flood in advance.   
+Considering the possibility of the fact that there are more than one spatiotemporal pattern of forming EPCs at one location, the ensemble learning method is then adopted to construct a predictive model by consolidating all the patterns learned by Decision Tree. During this ensemble process, only the highly correlated patterns are chosen to form the model. Using this predictive model, the potential EPCs can be predicted in advance with a long lead-time or more than 7 days. Extended from the EPCs prediction, people can be alerted about the possible occurrence of extreme flood in advance.   
 
 \section{Case Study: State of Iowa}
 \label{sec:CaseStudy}
 To evaluate our approach, the 30 years of precipitation data at State of Iowa was chosen for the investigation on the EPCs occurred in Iowa. Next, the precipitable water data of northern hemisphere was used to identify the PWCs occurred at different locations during the same 40 years period of time. Then, we applied our support and confidence measurements to measure the relationship between the EPCs of Iowa and the PWCs of other locations. With this quantized measures, we then identified the potential initial states or locations of the Spatiotemporal Co-occurrence Patterns of EPCs in Iowa. Furthermore, the data mining techniques were adopted to learn the Spatiotemporal Co-occurrence Patterns from the atmospheric conditions of these identified locations. 
-\\newline 
+\newline 
 These learned conditions are considered as the precursors of the occurrences of EPCs in Iowa so they can be used to build the model for predicting the EPC occurrences. Using the same approach and randomly selecting the locations from those locations which are not identified as the potential initial states, we built different models to compare with the one with initial states. The result showed that the model with the initial locations selected by our proposed support and confidence outperformed the other models built using other non-initial locations. The details of our experiments are illustrated in the following sections. 
 \subsection{Data Preprocessing}   
 The area average daily precipitation accumulation of Iowa between 1980 and 2010 was obtained for our experiments originally. Since our long term goal is to predict extreme flooding, the accumulated precipitations of winter seasons (from November to February) were removed to eliminate the precipitation of snowfalls. This way, the patterns of how the flooding caused by extreme rainfalls clusters can be truly captured by our proposed method.     
@@ -284,6 +286,7 @@ minimal length of a PC, $\pi$ was set to 7 days. With this configuration, we ide
 \newline 
 The daily precipitable water of the northern hemisphere were obtained and then used to identify the PWCs occurred at those $5,328$ geographic locations. The same approach used for searching EPCs was adopted to search for the PWCs. Therefore, the thresholds were also needed to configure the search. We set $\pi$ to 7 days, the same setting for finding EPCs. The percentile value concept was also used for obtaining $\theta$ and $\alpha$. However, we experimented with three different types of percentile values obtained from different scopes of precipitable water data.
 \subsection{Precipitable Water Cluster Thresholds}
+\label{sec:3typethresholds}
 The first type of thresholds are the percentile values among all locations in northern hemisphere. We called this type as global thresholds because these thresholds represents the percentile of entire precipitable water of northern hemisphere. Thus, only one set of thresholds is needed to identify the extreme clusters. These clusters are considered as the global clusters which contain extremely high accumulation of precipitable water because the average precipitable water of this type of cluster is greater than 90\% percentile of overall precipitable water.  
 \newline 
 The second type of thresholds are the local thresholds. One location has its own thresholds calculated from the historical precipitable water recorded at this location. This way, the identified clusters are location-constrained and represent the abrupt increase in precipitable water at certain locations. 
@@ -292,7 +295,6 @@ The third type of thresholds are called target thresholds. In our case, the thre
 \newline
 Based in these three types of thresholds, we then identified three sets of PWCs through our searching algorithm. The results are shown in Table~\ref{tab:thresholds}.
 \begin{table}
-
 \centering
 \caption{The list of identified PWCs using different type of thresholds.}
 \begin{tabular}{| l | c | r |}
@@ -306,11 +308,43 @@ Based in these three types of thresholds, we then identified three sets of PWCs 
 \end{table}
 
 \subsection{Co-Occurrence Locations}
+Based on our definitions of support and confidence with given lead-time $l=7$ days, we then calculate the support and confidence of each location. Since we have three sets of PWCs obtained by applying different type of thresholds, we then collected three sets of support and confidence for each location. Since the support value is the number of days that Iowa's EPCs are overlapped with one location's PWCs, the maximum support is the total days of Iowa's EPCs. Meanwhile, the confidence value is between 0 and 1. The greater the support and confidence of a location, the higher possibility that this location is a co-occurrence location. These co-occurrence locations are considered as the initial location or initial state of the Spatiotemporal Co-occurrence Patterns. After applying the thresholds with $SUPP \geq 100$ and $CONF \geq 0.2$, we visualized three sets of the co-occurrence locations of Iowa on the maps, shown in Figure~\ref{fig:co-locations}. 
+
+\begin{figure}  
+\begin{center}  
+%\includegraphics[height=7in,width=5in,angle=90]{file.eps}  
+\caption{The co-occurrence locations of Iowa using three different types of thresholds (a) Global, (b) Local, (c) Target - Iowa. Each circle represents a location. The color of the circle indicates the degree of the support and the size of the circle indicates the confidence. The thresholds are $SUPP \geq 100$ and $CONF \geq 0.2$ (Best viewed in color) \label{fig:co-locations}}  
+\end{center}  
+\end{figure}
 
 \subsection{Spatiotemporal Co-occurrence Patterns Learning}
-
-
+The Decision Tree algorithm was adopted in our experiment to learn the Spatiotemporal Co-occurrence Patterns. To evaluate the co-occurrence locations, we generated one data set using the features only from the co-occurrence locations. These features include 7 days of daily meteorological indexes of each location. These indexes are 300hPa Geopotential Height
+, 500hPa Geopotential Height, 1000hPa Geopotential Height, 300hPa Zonal Wind, 300hPa Meridional Wind, 850hPa Zonal Wind, 850hPa Meridional Wind, and 850hPa Temperature, which are suggested by the domain experts and evidenced to be the important contributive factors in forming EPCs. Meanwhile, we generate other five data sets by randomly selecting the same number of locations as the co-occurrence locations from those locations other than the co-occurrence locations. These 5 data sets have the same 7-day daily meteorological indexes as their features. As a result, these 6 data sets have the same amount of features. 
+\newline
+The 10-fold cross-validation was adopted to validate the pattern learning processes. The accuracy on classified the positive class indicating the performance on predicting the EPCs with at least 7 days in advance was used as the measurement. The average accuracy of the results obtained from those 5 non-co-occurrence location data sets was used to compare with the accuracy obtained from co-occurrence location data set. The outcome shows that using the features at co-occurrence locations does help with the spatiotemporal pattern identification. The detained results were also shown in Table~\ref{tab:random}
+\begin{table}
+\centering
+\caption{The classification results from co-occurrence location data set and non-co-occurrence location data sets.}
+\begin{tabular}{| l | c | r |}
+    \hline
+    1 & 2 & 3 \\ \hline
+    4 & 5 & 6 \\ \hline
+    7 & 8 & 9 \\
+    \hline
+\end{tabular}
+\label{tab:random}
+\end{table}
+\newline
+Not every co-occurrence locations are the initial state of the Spatiotemporal Co-occurrence Patterns. Through our learning processes using Decision Tree algorithm, we identified the possible patterns as well as the initial locations of these patterns. We visualization these initial locations in Figure~\ref{fig:inilocations}.
+\begin{figure}  
+\begin{center}  
+%\includegraphics[height=7in,width=5in,angle=90]{file.eps}  
+\caption{The initial locations from where the Iowa's extreme precipitation are triggered.  \label{fig:inilocations}}  
+\end{center}  
+\end{figure}
+    
 \subsection{Predicting Future Extreme Precipitation Clusters}
+In previous experiments, the lead time $l$ was set to 7 days. However, the duration of forming a EPC is not fixed and maybe more than 7 days. Therefore, we variated the lead time in order to identified the initial locations of the patterns with different duration of transformation from PWC to EPC. We set $l$ from 5 to 14 and then learned various Spatiotemporal Co-occurrence Patterns through Decision Tree algorithm. Through the voting approach, we built a ensemble model based on those patterns. Using the model, we are able to predict the future extreme precipitation clusters with about 80\% accuracy.        
 
 \section{Conclusion}
 \label{sec:Conclusion}
