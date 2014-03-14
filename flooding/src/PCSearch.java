@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,10 +10,11 @@ import java.util.Random;
 
 
 public class PCSearch {
+	private static String delimit = "\\s+";
 	private int[] ids = {3942, 3979};
 	private int minPCDays = 7, maxNonePCDays = 2;
 	private double lowThreshold = 0, PCThreshold = 0.027272727;	//0.29772727
-	private String dataFile = null, delimit = "\\s+", outFile = "PC.dat";
+	private String dataFile = null, outFile = "PC.dat";
 	
 	public PCSearch(String dataFile) {
 		this.dataFile = dataFile;
@@ -35,10 +35,6 @@ public class PCSearch {
 	
 	public void setPCThreshold(double PCThreshold) {
 		this.PCThreshold = PCThreshold;
-	}
-	
-	public void setDelimit(String delimit) {
-		this.delimit = delimit;
 	}
 	
 	public void setOutFile(String outFile) {
@@ -223,23 +219,23 @@ public class PCSearch {
 		return false;
 	}
 	
-	public void getDistributions() throws IOException {
-		int totalDays = 23011, totalSampleLocations = 5328, steps = 2, stepLocations = totalSampleLocations/steps;
-		double[][] PWs = new double[stepLocations][totalDays];
-		for (int s=0;s<steps;s++) {
-			String line="";
+	public static void getLocalDistributions(String dataFile, String outFile) {
+		int totalDays = 7595, numLocation = 5328;
+		double[][] PWs = new double[numLocation][totalDays];
+		String line="";
+		int days = 0;
+		try {
 			BufferedReader reader = new BufferedReader(new FileReader(dataFile));
-			int days = 0;
 			while ((line = reader.readLine()) != null) {
 				String[] values = line.split(delimit);
-				for (int i=0;i<stepLocations;i++)
-					PWs[i][days] = Double.parseDouble(values[s*stepLocations+i+1]);	//skip values[0] which is empty
+				for (int i=0;i<numLocation;i++)
+					PWs[i][days] = Double.parseDouble(values[i+1]);	//skip values[0] which is empty
 				days++;
 			}
 			reader.close();
 
-			BufferedWriter out = new BufferedWriter(new FileWriter(outFile+"-"+s+".txt"));
-			for (int i=0;i<stepLocations;i++) {
+			BufferedWriter out = new BufferedWriter(new FileWriter(outFile));
+			for (int i=0;i<numLocation;i++) {
 				Arrays.sort(PWs[i]);
 				for (int j=5;j<100;j+=5) {
 					out.write(PWs[i][totalDays*j/100]+" ");
@@ -247,29 +243,47 @@ public class PCSearch {
 				out.write("\r\n");
 			}
 			out.close();
-		}
-	}
-	
-	public static void getDistributions(String dataFile, String outFile) {
-		PCSearch pc = new PCSearch(dataFile);
-		pc.setOutFile(outFile);
-		try {
-			pc.getDistributions();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public static void getIowaPWDistribution() {
-		int totalDays = 23011;
+	public static void getGlobalDistributions(String dataFile, String outFile) {
+		int totalDays = 7595, numLocation = 5328;
+		double[] PWs = new double[numLocation*totalDays];
+		String line="";
+		int index = 0;
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(dataFile));
+			while ((line = reader.readLine()) != null) {
+				String[] values = line.split(delimit);
+				for (int i=0;i<numLocation;i++)
+					PWs[index++] = Double.parseDouble(values[i+1]);	//skip values[0] which is empty
+			}
+			reader.close();
+
+			BufferedWriter out = new BufferedWriter(new FileWriter(outFile));
+			Arrays.sort(PWs);
+			for (int j=5;j<100;j+=5) {
+				out.write(PWs[(int)((double)(numLocation)*totalDays*j/100)]+" ");
+			}
+			out.write("\r\n");
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void getIowaPWDistribution(String dataFile, String outFile) {
+		int totalDays = getLineNumber(dataFile);
+		System.out.println(dataFile+" has "+totalDays+" days");
 		double[] IowaPWs = new double[totalDays];
 		
-		String IowaPrecipFile = "./data/text/PRECIP2_1948-2010.txt";
-		String outFile = "IowaPrecipDistribution.txt";
 		String delimit = "\\s+";
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(IowaPrecipFile));
+			BufferedReader reader = new BufferedReader(new FileReader(dataFile));
 			String line="";
 			int days = 0;
 			while ((line = reader.readLine()) != null) {
@@ -560,7 +574,6 @@ public class PCSearch {
 		int totalDays = 23011, totalSampleLocations = 5328;
 		int predictStartDay = 10, predictEndDay = 12, maxNonePCDays = 2, minPCDays = 7;
 		int lowThresholdIndex = 3, PCThresholdIndex = 17;
-		String base = ".";
 		String IowaPrecipFile = "./data/text/PRECIP2_1948-2010.txt";
 		//String IowaEPCFile = "C:\\hub\\project\\cs480\\IowaPC_Precip_20-90.txt";
 		String distributionFile = "PWDistribution.txt";
@@ -1043,7 +1056,7 @@ public class PCSearch {
 	}
 	
 	public static int getLineNumber(String file) {
-		int ret = -1;
+		int ret = 0;
 		try {
 			LineNumberReader  reader = new LineNumberReader(new FileReader(file));
 			reader.skip(Long.MAX_VALUE);
@@ -1053,7 +1066,7 @@ public class PCSearch {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return ret+1;
+		return ret;
 	}
 	
 	public static void printHeader() {
@@ -1091,32 +1104,13 @@ public class PCSearch {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		//printHeader();
-		createWekaFile();
 		/*
-		double lowThreshold = 38.189999;
-		double PCThreshold = 46.779999; // 0.027272727 / 0.29772727
-		boolean precipIowa = false;
-		String dataFile = "/home/dluo/Documents/CS480/flooding/data/PW.txt";
-		String outFile = "/home/dluo/Documents/CS480/flooding/PC/PC887-"+PCThreshold;
-		int[] ids = {887};
-		*/
+		getIowaPWDistribution("./data/text/PRECIP2_1980-2010_3-10.txt",
+				"./data/text/percentileIowa_0.05.txt");
+		*/		
 		
-		/*String dataFile = "C:\\hub\\project\\cs480\\data\\PW.txt";
-		String outFile = "C:\\hub\\project\\cs480\\PCDistribution";
-		PCSearch.getDistributions(dataFile, outFile);*/
-		//getIowaPWDistribution();
-		//getIowaPCs();
-		//cleanIowaPC();
-		//resavePWs();
-		/*
-		try {
-			PCSearch.getPCCounts();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
+		getGlobalDistributions("./data/text/1980-2010_PW_3-10.txt", "./data/text/percentile1_0.05.txt");
+		
 	}
 
 }
