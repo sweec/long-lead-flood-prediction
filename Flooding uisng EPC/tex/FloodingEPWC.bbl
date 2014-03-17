@@ -1,9 +1,22 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{alfieri2012operational}
+L.~Alfieri, P.~Salamon, F.~Pappenberger, F.~Wetterhall, and J.~Thielen.
+\newblock Operational early warning systems for water-related hazards in
+  europe.
+\newblock {\em Environmental Science \& Policy}, 21:35--49, 2012.
 
 \bibitem{cloke2009ensemble}
 H.~Cloke and F.~Pappenberger.
 \newblock Ensemble flood forecasting: a review.
 \newblock {\em Journal of Hydrology}, 375(3):613--626, 2009.
+
+\bibitem{Iowa:floods}
+{Iowa Homeland Security and Emergency Management}.
+\newblock Iowa disaster history.
+\newblock
+  \url{http://homelandsecurity.iowa.gov/disasters/iowa_disaster_history.html}.
+\newblock Accessed: 2014-2-21.
 
 \bibitem{kalnay1996ncep}
 E.~Kalnay, M.~Kanamitsu, R.~Kistler, W.~Collins, D.~Deaven, L.~Gandin,
@@ -26,10 +39,10 @@ X.~Li, B.~Plale, N.~Vijayakumar, R.~Ramachandran, S.~Graves, and H.~Conover.
   data mining and events processing.
 \newblock {\em Earth Science Informatics}, 1(2):49--57, 2008.
 
-\bibitem{:/content/aip/magazine/physicstoday/article/65/3/10.1063/PT.3.1475}
+\bibitem{lubchenco2012extreme}
 J.~Lubchenco and T.~R. Karl.
 \newblock Predicting and managing extreme weather events.
-\newblock {\em Print edition}, 65(3):31--37, 2012.
+\newblock {\em Physics Today}, 65(3):31, 2012.
 
 \bibitem{mcgovern2011using}
 A.~McGovern, D.~John~Gagne, N.~Troutman, R.~A. Brown, J.~Basara, and J.~K.
