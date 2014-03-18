@@ -520,6 +520,7 @@ public class flooding_prediction {
 		return loclist;
 	}
 	
+	private static double lastLowPercentile = -1, lastPCPercentile = -1, lastEPCPercentile = -1;
 	public static ArrayList<ClassificationResults> runInMemory() throws Exception {
 		if (IowaPWs == null || data == null)
 			readData();
@@ -529,20 +530,22 @@ public class flooding_prediction {
 		double EPCThreshold = percentilesIowa[(int)(EPCPercentile/percentile_step)];
 		double PCUPBOUND = percentilesIowa[(int)(PCUpBound/percentile_step)];
 		double PCLOWBOUND = percentilesIowa[(int)(PCLowBound/percentile_step)];
-		System.out.println("low:"+low);
+		System.out.println("\nlow:"+low);
 		System.out.println("PCThreshold:"+PCThreshold);
 		System.out.println("EPCThreshold:"+EPCThreshold);
 		ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
-		System.out.println("pwclist.size:"+pwclist.size());
+		System.out.println("PC found:"+pwclist.size());
 
 		// looking for the EPCs of Iowa
 		ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
+		System.out.println("EPC found: "+AllEPCs.size());
+		if (!validEPCs(AllEPCs, Start_Date, End_Date))
+			return null;
 		ArrayList<PWC> testEPCs = PWC.PWCRangeByYear(AllEPCs, testData_start_year, testData_end_year);
 		testEPCs = PWC.PWCRangeByMonth(testEPCs, start_month, end_month);
 		ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
 		trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
 		//PWC.StorePCData(trainEPCs,IowaEPCFile);
-
 		
 		ArrayList<PWC> AllPCs = null;
 		// looking for the PCs of Iowa
@@ -556,10 +559,10 @@ public class flooding_prediction {
 		TestPCs = PWC.PWCRangeByMonth(TestPCs, start_month, end_month);
 		ArrayList<PWC> TrainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
 		TrainPCs = PWC.PWCRangeByMonth(TrainPCs, start_month, end_month);
-		if (RandomselectPC) {
+		//if (RandomselectPC) {
 			TrainPCs = PWC.RandomSelection(TrainPCs, trainEPCs.size(), 1);
-			TestPCs = PWC.RandomSelection(TestPCs, trainEPCs.size(), 1);
-		}
+			TestPCs = PWC.RandomSelection(TestPCs, testEPCs.size(), 1);
+		//}
 		//PWC.StorePCData(TrainPCs,IowaPCFile);
 		System.out.println("# of train EPC:"+trainEPCs.size()+"   # of test EPC:"+testEPCs.size());
 		System.out.println("# of train PC:"+TrainPCs.size()+"   # of test PC:"+TestPCs.size());
@@ -588,12 +591,16 @@ public class flooding_prediction {
 
 		ArrayList<PWLocation> loclist;
 		// get the location support and confidence data
-		if (loadlocfromfile) {
+		if (loadlocfromfile && lastLowPercentile == lowPercentile
+				&& lastPCPercentile == PCPercentile
+				&& lastEPCPercentile == EPCPercentile) {
 			loclist = PWLocation.LoadLocData(idFile[PercentileUsed], "\\s+"); 
-			}
-		else {
+		} else {
 			loclist = getLoclist(AllEPCs, back, backdays);
 			PWLocation.StoreLocData(loclist, idFile[PercentileUsed]);
+			lastLowPercentile = lowPercentile;
+			lastPCPercentile = PCPercentile;
+			lastEPCPercentile = EPCPercentile;
 		}
 		System.out.println("total number of locations:"+loclist.size());
 	
@@ -668,6 +675,77 @@ public class flooding_prediction {
 			}
 		}
 		return result;
+	}
+
+	private static int[][] floodingStartDates = {
+		{1984, 6, 7}, /*{1987, 5, 26}, {1988, 7, 15},*/ {1990, 5, 18}, {1990, 7, 25}, 
+		{1991, 6, 1}, {1992, 9, 14}, /*{1993, 3, 26}, {1993, 4, 13},*/ {1996, 5, 8},
+		{1996, 6, 15}, {1998, 6, 13}, {1999, 5, 16}, /*{1999, 7, 2}, {2001, 4, 8}, {2002, 6, 3},*/ 
+		{2004, 5, 19}, {2007, 5, 5}, {2007, 8, 17}, {2008, 5, 25}, {2010, 5, 11}, {2010, 6, 1}
+	};
+	/*
+	private static int[][] floodingEndDates = {
+		{1984, 6, 8}, {1987, 5, 26}, {1988, 7, 15}, {1990, 5, 18}, {1990, 7, 25}, 
+		{1991, 6, 1}, {1992, 9, 14}, {1993, 3, 26}, {1993, 4, 13}, {1996, 5, 8},
+		{1996, 6, 15}, {1998, 6, 13}, {1999, 5, 16}, {1999, 7, 2}, {2001, 4, 8}, {2002, 6, 3}, 
+		{2004, 5, 19}, {2007, 5, 5}, {2007, 8, 17}, {2008, 5, 25}, {2010, 5, 11}, {2010, 6, 1}
+	};*/
+	private static Calendar floodingBaseDate = null;
+	private static int[] floodingStartDays = null;
+	
+	/*
+	 * validate EPC found by known flooding event at Iowa based on 
+	 * http://homelandsecurity.iowa.gov/disasters/iowa_disaster_history.html
+	 */
+	public static boolean validEPCs(ArrayList<PWC> AllEPCs, Calendar startDate, Calendar endDate) {
+		if (AllEPCs.isEmpty()) {
+			System.out.println("validEPCs: no EPC found");
+			return false;
+		}
+		if (floodingStartDays == null) {
+			floodingStartDays = new int[floodingStartDates.length];
+			floodingBaseDate = AllEPCs.get(0).BASE_DATE;
+			for (int i=0;i<floodingStartDates.length;i++) {
+				Calendar date = new GregorianCalendar(floodingStartDates[i][0], floodingStartDates[i][1]-1, floodingStartDates[i][2]);
+				floodingStartDays[i] = (int) ((date.getTimeInMillis()-floodingBaseDate.getTimeInMillis())/(1000 * 60 * 60 * 24));
+			}
+		} else if (!floodingBaseDate.equals(AllEPCs.get(0).BASE_DATE)) {
+			int shift = (int) ((AllEPCs.get(0).BASE_DATE.getTimeInMillis()-floodingBaseDate.getTimeInMillis())/(1000 * 60 * 60 * 24));
+			floodingBaseDate = AllEPCs.get(0).BASE_DATE;
+			for (int i=0;i<floodingStartDays.length;i++)
+				floodingStartDays[i] -= shift;
+		}
+		int ValidAroundRange = 5;
+		int startDay = (int) ((startDate.getTimeInMillis()-floodingBaseDate.getTimeInMillis())/(1000 * 60 * 60 * 24));
+		int endDay = (int) ((endDate.getTimeInMillis()-floodingBaseDate.getTimeInMillis())/(1000 * 60 * 60 * 24));
+		int fsdi = 0;
+		while (floodingStartDays[fsdi] < startDay)
+			fsdi++;
+		int index = 0;
+		for (int i=fsdi;i<floodingStartDays.length;i++) {
+			int start = floodingStartDays[i];
+			if (start > endDay)
+				break;
+			boolean covered = true;
+			do {
+				PWC epc = AllEPCs.get(index);
+				if (epc.start_date <= start && epc.end_date >= start-ValidAroundRange)
+					break;
+				if (epc.start_date > start) {
+					covered = false;
+					break;
+				}
+				index++;
+			} while (index < AllEPCs.size());
+			if (index == AllEPCs.size())
+				covered = false;
+			if (!covered) {
+				System.out.println("No EPC covers flooding event started on "
+						+floodingStartDates[i][0]+"-"+floodingStartDates[i][1]+"-"+floodingStartDates[i][2]);
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private static void getLocation(int locNo) throws Exception {
@@ -1017,10 +1095,82 @@ public class flooding_prediction {
 		runRandomLocations(46);
 		
 	}
+
+	private static void initFor1980() {
+		String featureFiles[] = new String[] {
+			"./data/text/1980-2010_Z1000.txt",
+			"./data/text/1980-2010_T850.txt",
+			"./data/text/1980-2010_PW.txt",
+			"./data/text/1980-2010_U300.txt",
+			"./data/text/1980-2010_U850.txt",
+			"./data/text/1980-2010_V300.txt",
+			"./data/text/1980-2010_V850.txt",
+			"./data/text/1980-2010_Z300.txt",
+			"./data/text/1980-2010_Z500.txt"
+		};
+		
+		for (int i=0;i<featureFiles.length;i++)
+			DataLoader.featureFiles[i] = featureFiles[i];
+		
+		Base_Date = new GregorianCalendar(1980, 0, 1); // first date's ID starts with 0
+		IowaPrecipFile = "./data/text/PRECIP2_1980-2010.txt";
+		Start_Date = new GregorianCalendar(1980, 0, 1);
+		//End_Date = new GregorianCalendar(2010, 11, 31);
+		Data_start_day =(Start_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+		Data_end_day = (End_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+		trainData_start_year = 1980; //trainData_end_year = 2010;
+		testData_start_year = 1980; //testData_end_year = 2010;
+		totalDays = (int)(Data_end_day-Data_start_day+1);
+		start_month = 3; end_month = 10;
+	}
+	
+	/*
+	 * for each percentile type, all combinations of 
+	 * PC/EPC thresholds, maxNonePCDays, minPCDays as well as locations 
+	 * selected by all combinations of support, confidence (in runInMemory)
+	 * are tested.
+	 */
+	public static void testPercentileUsed(int percentileToUse) throws Exception {
+		if (percentileToUse < 0 || percentileToUse > 2) {
+			System.out.println("Set PercentileUsed to "+percentileToUse+" is not allowd.");
+			return;
+		}
+		
+		PercentileUsed = percentileToUse;
+		initFor1980();
+		
+		double[][] percentiles = {
+				{0.5, 0.8}, {0.5, 0.85}, {0.5, 0.9}, {0.5, 0.95},
+				{0.55, 0.8}, {0.55, 0.85}, {0.55, 0.9}, {0.55, 0.95},
+				{0.6, 0.8}, {0.6, 0.85}, {0.6, 0.9}, {0.6, 0.95}, 
+				{0.65, 0.8}, {0.65, 0.85}, {0.65, 0.9}, {0.65, 0.95},
+				{0.7, 0.8}, {0.7, 0.85}, {0.7, 0.9}, {0.7, 0.95}
+		};
+		final int[] maxNonePCDaysRange = {2, 3};
+		final int[] minPCDaysRange = {5, 12};
+		
+		long startTime, stopTime;
+		for (int i=0;i<percentiles.length;i++) {
+			PCPercentile = percentiles[i][0]; EPCPercentile = percentiles[i][1];
+			PCLowBound = PCPercentile; PCUpBound = EPCPercentile;
+			System.out.println("Test with PCPercentile("+PCPercentile+"), EPCPercentile("+EPCPercentile+")");
+			startTime = System.currentTimeMillis();
+			Run_maxNonePCDays(maxNonePCDaysRange[0], maxNonePCDaysRange[1], true, new Callable<Void>() {
+				public Void call() throws Exception {
+					return Run_minPCDays(minPCDaysRange[0], minPCDaysRange[1], true, new Callable<ArrayList<ClassificationResults>>() {
+						public ArrayList<ClassificationResults> call() throws Exception {
+							return runInMemory(); }}); }});
+			stopTime = System.currentTimeMillis();
+			System.out.println("Test with PCPercentile("+PCPercentile+"), EPCPercentile("+EPCPercentile+") costs "+(stopTime-startTime)+"ms\n");
+		}
+	}
 	
 	public static void main(String[] args) throws Exception {
+		int percentileToUse = 0;
+		if (args.length > 0)
+			percentileToUse = Integer.parseInt(args[0]);
+		testPercentileUsed(percentileToUse);
 		//testPercentileUsed2();
-		//runInMemory();
 		/*
 		BufferedWriter outresult = new BufferedWriter(new FileWriter(resultfiles[PercentileUsed],false));
 		ClassificationResults.writetitle(outresult);
