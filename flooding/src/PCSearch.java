@@ -1124,33 +1124,12 @@ public class PCSearch {
 		long Data_start_day =(Start_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
 		long Data_end_day = (End_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
 		int trainData_start_year = 1980, trainData_end_year = 2010;
-		int totalDays = (int)(Data_end_day-Data_start_day+1);
 		int start_month = 3, end_month = 10;
 
 		// load Iowa Precipitated water data
-		double[] IowaPWs = new double[totalDays];
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(IowaPrecipFile));
-			String line="";
-			String delimit = "\\s+";
-			int day=0, index=0;
-			while ((line = reader.readLine()) != null) {
-				if ( (day >= Data_start_day) && (day <= Data_end_day)) {
-					String[] values = line.split(delimit);
-					IowaPWs[index++] = Double.parseDouble(values[1]);	//skip values[0] which is empty
-				}
-				day++;
-			}
-			reader.close();
-		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		double[] IowaPWs = readIowaPWData(IowaPrecipFile, Data_start_day, Data_end_day);
 
-		double percentile_step = 0.05;
+		double percentile_step = 0.01;
 		double[] percentilesIowa = null;
 		try {
 			percentilesIowa = StdStats.percentiles(IowaPWs, percentile_step);
@@ -1159,8 +1138,8 @@ public class PCSearch {
 			e.printStackTrace();
 		}
 
-		double[] EPCPercentiles = {0.9, 0.85, 0.8};
-		double[] lowPercentiles = {0.35, 0.4};
+		double[] EPCPercentiles = {0.8, 0.81, 0.82, 0.83, 0.84};
+		double[] lowPercentiles = {0.35, 0.36, 0.37, 0.38, 0.39};
 		int maxNonePCDays = 2, minPCDays = 5;
 		int[] floodingStartDays = new int[floodingStartDates.length];
 		int[] floodingEndDays = new int[floodingEndDates.length];
@@ -1220,6 +1199,32 @@ public class PCSearch {
 		//System.out.println("Working Directory = " + System.getProperty("user.dir"));
 	}
 	
+	// load Iowa Precipitated water data
+	private static double[] readIowaPWData(String IowaPrecipFile, long Data_start_day, long Data_end_day) {
+		double[] IowaPWs = new double[(int) (Data_end_day-Data_start_day+1)];
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(IowaPrecipFile));
+			String line="";
+			String delimit = "\\s+";
+			int day=0, index=0;
+			while ((line = reader.readLine()) != null) {
+				if ( (day >= Data_start_day) && (day <= Data_end_day)) {
+					String[] values = line.split(delimit);
+					IowaPWs[index++] = Double.parseDouble(values[1]);	//skip values[0] which is empty
+				}
+				day++;
+			}
+			reader.close();
+		} catch (NumberFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return IowaPWs;
+	}
+	
 	private static ArrayList<PWC> removeEmbedded(ArrayList<PWC> PCs) {
 		ArrayList<PWC> list = new ArrayList<PWC>();
 		int sDay = 0, eDay = Integer.MIN_VALUE;
@@ -1249,10 +1254,62 @@ public class PCSearch {
 		return list;
 	}
 
+	public static void testPCSearch() {
+		Calendar Base_Date = new GregorianCalendar(1980, 0, 1); // first date's ID starts with 0
+		String IowaPrecipFile = "./data/text/PRECIP2_1980-2010.txt";
+		Calendar Start_Date = new GregorianCalendar(1980, 0, 1);
+		Calendar End_Date = new GregorianCalendar(2010, 11, 31);
+		long Data_start_day =(Start_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+		long Data_end_day = (End_Date.getTimeInMillis()-Base_Date.getTimeInMillis())/(1000 * 60 * 60 * 24);
+		int trainData_start_year = 1980, trainData_end_year = 2010;
+		int start_month = 3, end_month = 10;
+
+		// load Iowa Precipitated water data
+		double[] IowaPWs = readIowaPWData(IowaPrecipFile, Data_start_day, Data_end_day);
+
+		double percentile_step = 0.05;
+		double[] percentilesIowa = null;
+		try {
+			percentilesIowa = StdStats.percentiles(IowaPWs, percentile_step);
+		} catch (NumberFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		int maxNonePCDays = 2;
+		double[] EPCPercentiles = {0.8, 0.85, 0.9};
+		double[] PCPercentiles = {0.5, 0.55, 0.6};
+		double[] lowPercentiles = {0.35, 0.4};
+		for (int minPCDays=5;minPCDays<=15;minPCDays++)
+			for (double lowPercentile:lowPercentiles)
+				for (double PCPercentile:PCPercentiles)
+					for (double EPCPercentile:EPCPercentiles) {
+						double low = percentilesIowa[(int)(lowPercentile/percentile_step)];
+						double PCThreshold = percentilesIowa[(int)(PCPercentile/percentile_step)];
+						double EPCThreshold = percentilesIowa[(int)(EPCPercentile/percentile_step)];
+						System.out.print(String.format("%d\t%.2f(%.2f)\t%.2f(%.2f)\t%.2f(%.2f)", minPCDays,
+								lowPercentile, low, PCPercentile, PCThreshold, EPCPercentile, EPCThreshold));
+						ArrayList<PWC> pwclist = PWC.FindPWCs(Start_Date,IowaPWs,low,PCThreshold,maxNonePCDays,minPCDays);
+						ArrayList<PWC> AllEPCs = PWC.PWCRangeByAverage(pwclist, EPCThreshold,Double.MAX_VALUE,"EPC");
+						ArrayList<PWC> AllPCs = PWC.PWCRangeByAverage(pwclist, PCThreshold,EPCThreshold,"PC");
+						System.out.print("\t"+pwclist.size()+"\t"+AllEPCs.size()+"\t"+AllPCs.size());
+						ArrayList<PWC> trainEPCs = PWC.PWCRangeByYear(AllEPCs, trainData_start_year, trainData_end_year);
+						ArrayList<PWC> trainPCs = PWC.PWCRangeByYear(AllPCs, trainData_start_year, trainData_end_year);
+						System.out.print("\t"+trainEPCs.size()+"\t"+trainPCs.size());
+						trainEPCs = PWC.PWCRangeByMonth(trainEPCs, start_month, end_month);
+						trainPCs = PWC.PWCRangeByMonth(trainPCs, start_month, end_month);
+						System.out.print("\t"+trainEPCs.size()+"\t"+trainPCs.size());
+						trainEPCs = removeEmbedded(trainEPCs);
+						trainPCs = removeEmbedded(trainPCs);
+						System.out.println("\t"+trainEPCs.size()+"\t"+trainPCs.size());
+					}
+	}
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		//testPCSearch();
 		floodingEventCoverage();
 		/*
 		getIowaPWDistribution("./data/text/PRECIP2_1980-2010_3-10.txt",
