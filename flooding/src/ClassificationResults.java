@@ -35,13 +35,33 @@ public class ClassificationResults {
 				+support_end+","
 				+confidence_start+","
 				+confidence_end+","
-				+flooding_prediction.start_month+","
-				+flooding_prediction.end_month+","
+				+flooding_prediction.Start_Month+","
+				+flooding_prediction.End_Month+","
 				+instancenumber+","
 				+locnumber+","
 				+this.classifier.getClass().getSimpleName();
 	}
 
+	public String one_record(flooding_prediction_Parallel fpp) throws Exception{
+		return "\n"+fpp.maxNonePCDays+","
+				+fpp.minPCDays+","
+				+fpp.lowPercentile+","
+				+fpp.PCPercentile+","
+				+fpp.EPCPercentile+","
+				+fpp.PCLowBound+","
+				+fpp.PCUpBound+","
+				+this.toString()+","
+				+flooding_prediction_Parallel.idFile[fpp.PercentileUsed]+","
+				+support_start+","
+				+support_end+","
+				+confidence_start+","
+				+confidence_end+","
+				+flooding_prediction_Parallel.start_month+","
+				+flooding_prediction_Parallel.end_month+","
+				+instancenumber+","
+				+locnumber+","
+				+this.classifier.getClass().getSimpleName();
+	}
 
 	public ClassificationResults(int tp,int fp,int tn,int fn,Classifier classifier, int instancenumber, int locnumber){
 		this.tp = tp;

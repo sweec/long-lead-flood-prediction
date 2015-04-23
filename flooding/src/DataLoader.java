@@ -30,15 +30,15 @@ public class DataLoader {
 	};
 	
 	public static String featureFiles[] = new String[] {
-		"./data/text/2010_Z1000.csv",
-		"./data/text/2010_T850.csv",
-		"./data/text/2010_PW.csv",
-		"./data/text/2010_U300.csv",
-		"./data/text/2010_U850.csv",
-		"./data/text/2010_V300.csv",
-		"./data/text/2010_V850.csv",
-		"./data/text/2010_Z300.csv",
-		"./data/text/2010_Z500.csv"
+		"./data/text/1980-2010_Z1000.txt",
+		"./data/text/1980-2010_T850.txt",
+		"./data/text/1980-2010_PW.txt",
+		"./data/text/1980-2010_U300.txt",
+		"./data/text/1980-2010_U850.txt",
+		"./data/text/1980-2010_V300.txt",
+		"./data/text/1980-2010_V850.txt",
+		"./data/text/1980-2010_Z300.txt",
+		"./data/text/1980-2010_Z500.txt"
 	};
 	
 	/*

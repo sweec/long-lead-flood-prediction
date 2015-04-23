@@ -28,7 +28,7 @@ public class PWC implements Comparable<PWC>{
 	public double average; 
 	public double[] values;
 	
-	public String classlable; // PC or EPC
+	public String classlabel; // PC or EPC
 	public String predictlable; // PC or EPC
 	
 	public PWC(Calendar Base_Date,int s_date,int e_date,double avg){
@@ -46,8 +46,8 @@ public class PWC implements Comparable<PWC>{
 		average = pwc.average;
 		values = Arrays.copyOf(pwc.values, pwc.values.length);
 		BASE_DATE = new GregorianCalendar(pwc.BASE_DATE.get(Calendar.YEAR),pwc.BASE_DATE.get(Calendar.MONTH),pwc.BASE_DATE.get(Calendar.DAY_OF_MONTH));
-		if ( pwc.classlable != null){
-			classlable = new String(pwc.classlable);
+		if ( pwc.classlabel != null){
+			classlabel = new String(pwc.classlabel);
 		}
 		if (pwc.predictlable != null) {
 			predictlable = new String(pwc.predictlable);
@@ -107,6 +107,24 @@ public class PWC implements Comparable<PWC>{
 		return start_date+" "+this.getlength()+" "+ String.format("%f", average)
 				+" "+ String.format("%.7f", this.getMaxValue())+" "+ String.format("%.7f", this.getMinValue())
 				+" "+ String.format("%.7f", this.getStdDev())+" "+getStartDateString();
+	}
+	
+	public static ArrayList<PWC> mergeDate(ArrayList<PWC> PWCs) {
+		ArrayList<PWC> out = new ArrayList<PWC>();
+		PWC pwc = PWCs.get(0);
+		int sdate = pwc.start_date, edate = pwc.end_date;
+		for (int i=1;i<PWCs.size();i++) {
+			pwc = PWCs.get(i);
+			if (pwc.start_date <= edate+1)
+				edate = Math.max(edate, pwc.end_date);
+			else {
+				out.add(new PWC(pwc.BASE_DATE, sdate, edate, 0));
+				sdate = pwc.start_date;
+				edate = pwc.end_date;
+			}
+		}
+		out.add(new PWC(pwc.BASE_DATE, sdate, edate, 0));
+		return out;
 	}
 	
     private static void findOnePWC(Calendar Base_Date,double[] daily_data,int start, int end, double lowThreshold
@@ -285,7 +303,7 @@ public class PWC implements Comparable<PWC>{
     	for (PWC pwc:list){
     		if ((pwc.average >= low) && (pwc.average < high)) {
     			PWC pc = new PWC(pwc);
-    			pc.classlable= lable;
+    			pc.classlabel= lable;
     			PCs.add(pc);
     		}
     	}
@@ -327,7 +345,40 @@ public class PWC implements Comparable<PWC>{
     	return PCs;
     }
     
-    public static void StorePCData(ArrayList<PWC> pwclist, String filename) throws IOException {
+    /*
+     * PCs should already be sorted by start_date
+     * otherwise the behavior is undefined
+     */
+	public static ArrayList<PWC> removeEmbedded(ArrayList<PWC> PCs) {
+		ArrayList<PWC> list = new ArrayList<PWC>();
+		int sDay = 0, eDay = Integer.MIN_VALUE;
+		int index = 0;
+		while (index < PCs.size()) {
+			PWC pc = PCs.get(index);
+			if (pc.end_date <= eDay) {
+				index++;
+				continue;
+			}
+			sDay = pc.start_date;
+			eDay = pc.end_date;
+			PWC maxpc = pc;
+			index++;
+			while (index < PCs.size()) {
+				pc = PCs.get(index);
+				if (pc.start_date > sDay)
+					break;
+				if (pc.end_date > eDay) {
+					eDay = pc.end_date;
+					maxpc = pc;
+				}
+				index++;
+			}
+			list.add(maxpc);
+		}
+		return list;
+	}
+
+	public static void StorePCData(ArrayList<PWC> pwclist, String filename) throws IOException {
     	ArrayList<PWC> PCs =pwclist;
 		BufferedWriter outPCData =new BufferedWriter(new FileWriter(filename));
 		//System.out.println(PCs.size());
@@ -487,12 +538,12 @@ public class PWC implements Comparable<PWC>{
 					for (int di=0;di<days;di++) {
 						out.write(dataForPC[i][f][e][di]+",");
 					}
-			out.write(PClist.get(e).classlable+"\n");
+			out.write(PClist.get(e).classlabel+"\n");
 		}
 		out.close();
     }
     
- // Create weka file from one list consist of EPCs and PCs using location list 
+    // Create weka file from one list consist of EPCs and PCs using location list 
     public static void createWekaFile(String[] features, String[] featureFiles,String delimit,
     		ArrayList<PWC> PClist, int days, int back
     		, ArrayList<PWLocation> idlist, String outFile) throws IOException
@@ -547,14 +598,50 @@ public class PWC implements Comparable<PWC>{
 				for (int di=0;di<days;di++) {
 					out.write("@attribute "+features[f]+"_"+ids[i]+"_"+(back+days-1-di)+" numeric\n");
 				}
-		out.write("@attribute class {EPC, PC}\n\n@data\n");
+		out.write("@attribute class {EPC, PC, NONPC}\n\n@data\n");
 		for (int e=0;e<PCNum;e++) {
 			for (int f=0;f<features.length;f++)
 				for (int i=0;i<idNum;i++)
 					for (int di=0;di<days;di++) {
 						out.write(dataForPC[i][f][e][di]+",");
 					}
-			out.write(PClist.get(e).classlable+"\n");
+			out.write(PClist.get(e).classlabel+"\n");
+		}
+		out.close();
+    }
+
+    // Create weka file from one list consist of EPCs and PCs using location list 
+    // data[feature][loc][day] is expected
+    public static void createWekaFile(String[] features, double[][][] data, String delimit,
+    		ArrayList<PWC> PClist, int days, int back
+    		, int[] ids, String[] labels, String outFile) throws IOException
+    {    	
+		Arrays.sort(ids);
+		int idNum = ids.length;
+		int PCNum = PClist.size();
+		System.out.println("idNum: "+idNum+"; PCNum: "+PCNum+" to "+outFile);
+		
+		BufferedWriter out = new BufferedWriter(new FileWriter(outFile));
+		out.write("@relation EPC\n\n");
+		for (int f=0;f<features.length;f++)
+			for (int i=0;i<idNum;i++) 
+				for (int di=0;di<days;di++) {
+					out.write("@attribute "+features[f]+"_"+ids[i]+"_"+(back+days-1-di)+" numeric\n");
+				}
+		String classlabel = labels[0];
+		for (int i=1;i<labels.length;i++)
+			classlabel += ", "+labels[i];
+		out.write("@attribute class {"+classlabel+"}\n\n@data\n");
+		for (PWC pwc:PClist) {
+			int PCe = pwc.start_date-back; // back from EPC start day
+			int PCs =PCe-days+1; // even back
+			
+			for (int f=0;f<features.length;f++)
+				for (int i=0;i<idNum;i++)
+					for (int day=PCs;day<=PCe;day++) {
+						out.write(data[f][i][day]+",");
+					}
+			out.write(pwc.classlabel+"\n");
 		}
 		out.close();
     }

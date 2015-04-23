@@ -434,6 +434,61 @@ public final class StdStats {
     }
     
     /**
+     * Return the percentile values in an array.
+     * if step>=1.0, return the smallest and largest
+     * if step<=0.0, reset to 0.01, return 101 values
+     * values are sum of continuous n numbers in array a
+     */
+    public static double[] percentiles(double[] a, double step, int n) {
+    	if (a == null || a.length < n)
+    		return null;
+    	if (step > 1.0 ) {step=1.0;}
+    	if (step <= 0.0 ) {step=0.01;}
+    	double[] b=new double[a.length-n+1];
+    	b[0] = 0;
+    	for (int i=0;i<n;i++)
+    		b[0] += a[i];
+    	for (int i=1;i<b.length;i++)
+    		b[i] = b[i-1] - a[i-1] + a[i+n-1];
+    	Arrays.sort(b);
+    	int pNo = (int)(1.0/step)+1;
+    	double[] p = new double[pNo];
+    	for (int i=0;i<pNo;i++) {
+    		int num = (int) ((double)(b.length*i) * (step));
+        	if (num < 1 ) {num=1;}
+        	p[i] = b[num-1];
+    	}
+    	return p;
+    }
+
+    public static double[] percentiles(double[][] a, double step, int n) {
+    	if (a == null || a[0].length < n)
+    		return null;
+    	int row = a.length, col = a[0].length-n+1;
+    	double[] b=new double[row*col];
+    	int base = 0;
+    	for (int j=0;j<row;j++) {
+    		b[base] = 0;
+    		for (int i=0;i<n;i++)
+    			b[base] += a[j][i];
+    		for (int i=1;i<col;i++)
+    			b[base+i] = b[base+i-1] - a[j][i-1] + a[j][i+n-1];
+    		base += col;
+    	}
+		Arrays.sort(b);
+    	if (step > 1.0 ) {step=1.0;}
+    	if (step <= 0.0 ) {step=0.01;}
+    	int pNo = (int)(1.0/step)+1;
+    	double[] p = new double[pNo];
+		for (int i=0;i<pNo;i++) {
+			int num = (int) ((double)(b.length*i) * (step));
+			if (num < 1 ) {num=1;}
+			p[i] = b[num-1];
+		}
+    	return p;
+    }
+
+    /**
      * Return the percentile values in a 2d array.
      * if step>=1.0, return the smallest and largest
      * if step<=0.0, reset to 0.01, return 101 values
@@ -481,6 +536,12 @@ public final class StdStats {
      * Convert command-line arguments to array of doubles and call various methods.
      */
     public static void main(String[] args) {
-
+    	double a[] = {1,2,3,4,5,6,7,8,9,10};
+    	double[] p = percentilesInLine(a,0.1);
+    	for (double d:a)
+    		System.out.print(d+" ");
+    	System.out.println();
+    	for (double d:p)
+    		System.out.print(d+" ");
     }
 }

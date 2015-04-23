@@ -165,7 +165,7 @@ public class RunWeka {
 					for (int di=0;di<days;di++) {
 						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
 					}
-			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			instValues[index] = classAttr.indexOfValue(pc.classlabel);
 			double weight = 1.0;
 			Instance inst = new Instance(weight, instValues);
 			inst.setDataset(trainset);
@@ -180,7 +180,7 @@ public class RunWeka {
 					for (int di=0;di<days;di++) {
 						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
 					}
-			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			instValues[index] = classAttr.indexOfValue(pc.classlabel);
 			double weight = 1.0;
 			Instance inst = new Instance(weight, instValues);
 			inst.setDataset(testset);
@@ -246,7 +246,7 @@ public class RunWeka {
 					for (int di=0;di<days;di++) {
 						instValues[index++] = data[f][locs[i]][pc.start_date-back-days+1+di];
 					}
-			instValues[index] = classAttr.indexOfValue(pc.classlable);
+			instValues[index] = classAttr.indexOfValue(pc.classlabel);
 			double weight = 1.0;
 			Instance inst = new Instance(weight, instValues);
 			inst.setDataset(trainset);
